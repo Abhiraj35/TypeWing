@@ -125,6 +125,8 @@ export function TypingTest() {
               >
                 <input
                   ref={inputRef}
+                  aria-label="Typing test input"
+                  aria-describedby="active-word-instruction"
                   className="absolute opacity-0"
                   onKeyDown={handleKeyDown}
                   value={typed}
@@ -135,6 +137,9 @@ export function TypingTest() {
                   autoCapitalize="none"
                   spellCheck={false}
                 />
+                <span id="active-word-instruction" className="sr-only">
+                  Current word: {words[wordIndex] ?? ""}
+                </span>
 
                 {(() => {
                   const start = 0
