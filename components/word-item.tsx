@@ -1,6 +1,6 @@
 "use client"
 
-import { memo } from "react"
+import { memo, type RefObject } from "react"
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
@@ -12,7 +12,7 @@ export interface WordItemProps {
   isPast: boolean
   /** True when a completed word was typed with any error → red underline. */
   hasError: boolean
-  elemRef?: React.RefObject<HTMLDivElement | null>
+  elemRef?: RefObject<HTMLDivElement | null>
 }
 
 export const WordItem = memo(function WordItem({
