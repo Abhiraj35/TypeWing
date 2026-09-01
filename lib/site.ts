@@ -1,9 +1,9 @@
 export const siteConfig = {
-  name: "KeyBr",
-  shortName: "KeyBr",
+  name: "TypeWing",
+  shortName: "TypeWing",
   description:
-    "KeyBr is a clean, focused typing test built to measure and improve your typing speed and accuracy over time.",
-  url: "https://keybr.example.com",
+    "TypeWing is a clean, focused typing test built to measure and improve your typing speed and accuracy over time.",
+  url: "https://typewing.example.com",
   themeColor: "#18181B",
   backgroundColor: "#ffffff",
 } as const;
