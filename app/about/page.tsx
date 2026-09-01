@@ -16,7 +16,7 @@ export default function AboutPage() {
         {siteConfig.description}
       </p>
       <p className="text-muted-foreground">
-        This is a learning build of KeyBr — a typing test website — being
+        This is a learning build of TypeWing — a typing test website — being
         rebuilt from a blank scaffold one feature at a time.
       </p>
     </main>
