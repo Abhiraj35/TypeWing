@@ -1,11 +1,11 @@
 "use client"
 
+import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useMountEffect } from "@/hooks/use-mount-effect"
 import { generateWords } from "@/lib/words"
 import { accuracyFromCounts, countWpm, wpmNumeratorFromCounts, type TestMode } from "@/lib/wpm-count"
 import type { ResultStats, WpmSnapshot } from "@/lib/result-types"
-
 export type TimeOption = 15 | 30 | 60
 export type WordOption = 10 | 25 | 50
 
