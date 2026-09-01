@@ -52,6 +52,7 @@ export function useTypingTest({
 
   // Cumulative counters (refs so they don't trigger re-renders on every keystroke).
   const correctCharsRef = useRef(0)
+  const correctSpacesRef = useRef(0)
   const allTypedRef = useRef(0)
   const errorsThisSecondRef = useRef(0)
   const correctedErrorsRef = useRef(0)
@@ -144,6 +145,7 @@ export function useTypingTest({
       setTimeLeft(to)
 
       correctCharsRef.current = 0
+      correctSpacesRef.current = 0
       allTypedRef.current = 0
       errorsThisSecondRef.current = 0
       correctedErrorsRef.current = 0
@@ -230,7 +232,7 @@ export function useTypingTest({
       if (mode === "time" && Math.floor(sek) > lastWpmSek) {
         lastWpmSek = Math.floor(sek)
         const elapsedMin = sek / 60
-        const snapWpm = elapsedMin > 0 ? Math.round(correctCharsRef.current / 5 / elapsedMin) : 0
+        const snapWpm = elapsedMin > 0 ? Math.round((correctCharsRef.current + correctSpacesRef.current) / 5 / elapsedMin) : 0
         const snapRaw = elapsedMin > 0 ? Math.max(Math.round(allTypedRef.current / 5 / elapsedMin), snapWpm) : 0
         setWpmHistory((prev) => [...prev, { second: lastWpmSek, wpm: snapWpm, raw: snapRaw, errors: errorsThisSecondRef.current }])
         errorsThisSecondRef.current = 0
@@ -273,6 +275,7 @@ export function useTypingTest({
           if (typed[i] !== currentWord[i]) errorsThisSecondRef.current++
         }
         if (typed.length > currentWord.length) errorsThisSecondRef.current++
+        if (typed === currentWord) correctSpacesRef.current += 1
 
         const nextInputs = [...wordInputs, typed]
         const nextIndex = wordIndex + 1
