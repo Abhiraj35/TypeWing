@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { ArrowClockwise, CaretRight, Clock, TextAa } from "@phosphor-icons/react"
-import { motion } from "motion/react"
+import { ResultsScreen } from "@/components/results-screen"
 import { WordItem } from "@/components/word-item"
 import { useSettings } from "@/components/settings-context"
 import {
@@ -37,6 +37,7 @@ export function TypingTest() {
     handleKeyDown,
     handleFocus,
     onRestart,
+    onNext,
     onModeChange,
     onTimeOptionChange,
     onWordOptionChange,
@@ -99,7 +100,11 @@ export function TypingTest() {
 
       <div className="flex flex-1 flex-col items-center justify-center">
         {finished && frozenStats ? (
-          <ResultsPanel stats={frozenStats} onRestart={() => onRestart()} />
+          <ResultsScreen
+            stats={frozenStats}
+            onRestart={() => onRestart()}
+            onNext={() => onNext()}
+          />
         ) : (
           <div className="w-full">
             <TestMeta
@@ -309,52 +314,5 @@ function TestMeta({
         )}
       </div>
     </div>
-  )
-}
-
-// ---- Inline results (full results screen lands in Feature 4) ----------------------
-
-function ResultsPanel({
-  stats,
-  onRestart,
-}: {
-  stats: NonNullable<ReturnType<typeof useTypingTest>["frozenStats"]>
-  onRestart: () => void
-}) {
-  const items = [
-    { label: "wpm", value: stats.wpm },
-    { label: "acc", value: `${stats.accuracy}%` },
-    { label: "raw", value: stats.raw },
-    { label: "consistency", value: `${stats.consistency}%` },
-  ]
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="w-full max-w-md"
-    >
-      <div className="grid grid-cols-4 gap-4 text-center">
-        {items.map((item) => (
-          <div key={item.label}>
-            <p className="text-3xl font-semibold tabular-nums">{item.value}</p>
-            <p className="mt-1 text-[11px] tracking-widest text-muted-foreground uppercase">
-              {item.label}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8 flex justify-center gap-3">
-        <button
-          type="button"
-          onClick={onRestart}
-          className="flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <ArrowClockwise size={14} aria-hidden />
-          Restart
-        </button>
-      </div>
-    </motion.div>
   )
 }

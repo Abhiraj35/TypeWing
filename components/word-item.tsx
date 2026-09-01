@@ -50,14 +50,14 @@ export const WordItem = memo(function WordItem({
           <span key={cIdx} className="relative inline-block">
             {/* Cursor before this char. Stable layoutId → motion FLIP-animates the
                 cursor smoothly when wordIndex changes (spacebar press). */}
-            {isActive && cIdx === displayInput.length && (
+            {isActive && !cursorAtEnd && cIdx === displayInput.length && (
               <motion.span
                 layoutId="cursor-active"
                 className="typing-cursor absolute top-0.5 -left-px h-[1.2em] w-0.5 rounded-full bg-primary"
                 transition={{ type: "spring", stiffness: 700, damping: 38, mass: 0.6 }}
               />
             )}
-            {isActive && isLastChar && cursorAtEnd && (
+            {isActive && isLastChar && cursorAtEnd && !(displayInput.length > word.length) && (
               <motion.span
                 layoutId="cursor-active"
                 className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-0.5 rounded-full bg-primary"
@@ -72,7 +72,14 @@ export const WordItem = memo(function WordItem({
       {(isActive || isPast) &&
         displayInput.length > word.length &&
         displayInput.slice(word.length).split("").map((extra, eIdx) => (
-          <span key={`extra-${eIdx}`} className="text-destructive/60">
+          <span key={`extra-${eIdx}`} className="relative inline-block text-destructive/60">
+            {eIdx === displayInput.length - word.length - 1 && isActive && (
+              <motion.span
+                layoutId="cursor-active"
+                className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-0.5 rounded-full bg-primary"
+                transition={{ type: "spring", stiffness: 700, damping: 38, mass: 0.6 }}
+              />
+            )}
             {extra}
           </span>
         ))}

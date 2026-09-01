@@ -117,6 +117,8 @@ export function useTypingTest({
     [buildResultStats, onFinished, onTypingActiveChange],
   )
 
+  // Always point the timer at the latest finishTest so it reads the freshest
+  // state (wordInputs/typed/wordIndex) when the time-mode interval fires.
   useEffect(() => {
     finishTestRef.current = finishTest
   }, [finishTest])
@@ -162,6 +164,11 @@ export function useTypingTest({
 
   const resetTest = useCallback((overrides?: { mode?: TestMode; timeOption?: TimeOption; wordOption?: WordOption }) => {
     resetTestWith(overrides)
+  }, [resetTestWith])
+
+  // Advance to a fresh test (keeps mode/options, generates a new word set).
+  const nextTest = useCallback(() => {
+    resetTestWith()
   }, [resetTestWith])
 
   // ---- Initial words + stored preferences on mount -----------------------------
@@ -213,11 +220,10 @@ export function useTypingTest({
     setStartTime(Date.now())
     onTypingActiveChange?.(true)
 
-    let elapsedMs = 0
+    const startedAt = Date.now()
     let lastWpmSek = 0
     timerRef.current = setInterval(() => {
-      elapsedMs += 250
-      const sek = elapsedMs / 1000
+      const sek = (Date.now() - startedAt) / 1000
       setElapsedSec(sek)
 
       // WPM history snapshot once per second (only meaningful for time mode).
@@ -294,6 +300,7 @@ export function useTypingTest({
           const lastIdx = typed.length - 1
           const isWrong = lastIdx >= currentWord.length || typed[lastIdx] !== currentWord[lastIdx]
           if (isWrong) correctedErrorsRef.current += 1
+          else if (correctCharsRef.current > 0) correctCharsRef.current -= 1
           setTyped((prev) => prev.slice(0, -1))
         }
         return
@@ -310,7 +317,7 @@ export function useTypingTest({
         if (charIdx < currentWord.length && e.key === currentWord[charIdx]) correctCharsRef.current += 1
 
         // For word mode: finishing the last word completes the test.
-        if (mode === "words" && wordIndex === words.length - 1 && nextTyped.length >= currentWord.length) {
+        if (mode === "words" && wordIndex === words.length - 1 && nextTyped === currentWord) {
           for (let i = 0; i < Math.min(nextTyped.length, currentWord.length); i++) {
             if (nextTyped[i] !== currentWord[i]) errorsThisSecondRef.current++
           }
@@ -399,8 +406,11 @@ export function useTypingTest({
     handleKeyDown,
     handleFocus,
     onRestart: resetTest,
+    onNext: nextTest,
     onModeChange,
     onTimeOptionChange,
     onWordOptionChange,
-  }
+  } as const
 }
+
+export type UseTypingTestReturn = ReturnType<typeof useTypingTest>
