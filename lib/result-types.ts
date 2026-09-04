@@ -18,6 +18,7 @@ export interface ResultStats {
   correctedErrors: number
   mode: string
   modeDetail: string
+  author?: string
   wpmHistory: WpmSnapshot[]
   wordInputs?: string[]
   targetWords?: string[]

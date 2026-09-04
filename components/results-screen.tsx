@@ -290,6 +290,9 @@ export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) 
           {mode} {modeDetail}
           {language ? ` · ${language}` : ""}
         </p>
+        {stats.author && (
+          <p className="-mt-1 text-sm text-muted-foreground">— {stats.author}</p>
+        )}
 
         <div className="flex items-center gap-2">
           <span className="text-5xl font-bold tabular-nums text-primary">

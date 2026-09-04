@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { ArrowClockwise, CaretRight, Clock, TextAa } from "@phosphor-icons/react"
+import { ArrowClockwise, CaretRight, Clock, Quotes, TextAa } from "@phosphor-icons/react"
 import { ResultsScreen } from "@/components/results-screen"
 import { WordItem } from "@/components/word-item"
 import { useSettings } from "@/components/settings-context"
@@ -12,6 +12,7 @@ import {
   type TimeOption,
   type WordOption,
 } from "@/hooks/use-typing-test"
+import { QUOTE_LENGTHS, type QuoteLength } from "@/lib/quotes"
 import type { TestMode } from "@/lib/wpm-count"
 import { cn } from "@/lib/utils"
 
@@ -22,6 +23,8 @@ export function TypingTest() {
     mode,
     timeOption,
     wordOption,
+    quoteLength,
+    quoteAuthor,
     words,
     typed,
     wordIndex,
@@ -41,6 +44,7 @@ export function TypingTest() {
     onModeChange,
     onTimeOptionChange,
     onWordOptionChange,
+    onQuoteLengthChange,
   } = useTypingTest()
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -91,9 +95,12 @@ export function TypingTest() {
         mode={mode}
         timeOption={timeOption}
         wordOption={wordOption}
+        quoteLength={quoteLength}
+        quoteAuthor={quoteAuthor}
         onModeChange={onModeChange}
         onTimeOptionChange={onTimeOptionChange}
         onWordOptionChange={onWordOptionChange}
+        onQuoteLengthChange={onQuoteLengthChange}
         onRestart={() => onRestart()}
         disabled={started}
       />
@@ -195,89 +202,147 @@ function ModeSelector({
   mode,
   timeOption,
   wordOption,
+  quoteLength,
+  quoteAuthor,
   onModeChange,
   onTimeOptionChange,
   onWordOptionChange,
+  onQuoteLengthChange,
   onRestart,
   disabled,
 }: {
   mode: TestMode
   timeOption: TimeOption
   wordOption: WordOption
+  quoteLength: QuoteLength
+  quoteAuthor: string | null
   onModeChange: (m: TestMode) => void
   onTimeOptionChange: (t: TimeOption) => void
   onWordOptionChange: (w: WordOption) => void
+  onQuoteLengthChange: (q: QuoteLength) => void
   onRestart: () => void
   disabled: boolean
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-      <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+    <div className="flex flex-col items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+          <button
+            type="button"
+            onClick={() => onModeChange("time")}
+            disabled={disabled}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
+              mode === "time"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+              disabled && "cursor-not-allowed opacity-60",
+            )}
+          >
+            <Clock size={14} aria-hidden />
+            time
+          </button>
+          <button
+            type="button"
+            onClick={() => onModeChange("words")}
+            disabled={disabled}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
+              mode === "words"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+              disabled && "cursor-not-allowed opacity-60",
+            )}
+          >
+            <TextAa size={14} aria-hidden />
+            words
+          </button>
+          <button
+            type="button"
+            onClick={() => onModeChange("quotes")}
+            disabled={disabled}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
+              mode === "quotes"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+              disabled && "cursor-not-allowed opacity-60",
+            )}
+          >
+            <Quotes size={14} aria-hidden />
+            quotes
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+          {mode === "time"
+            ? TIME_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => onTimeOptionChange(opt)}
+                  disabled={disabled}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 transition-colors",
+                    timeOption === opt
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                    disabled && "cursor-not-allowed opacity-60",
+                  )}
+                >
+                  {opt}
+                </button>
+              ))
+            : mode === "words"
+              ? WORD_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => onWordOptionChange(opt)}
+                    disabled={disabled}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 transition-colors",
+                      wordOption === opt
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                      disabled && "cursor-not-allowed opacity-60",
+                    )}
+                  >
+                    {opt}
+                  </button>
+                ))
+              : QUOTE_LENGTHS.map((ql) => (
+                  <button
+                    key={ql}
+                    type="button"
+                    onClick={() => onQuoteLengthChange(ql)}
+                    disabled={disabled}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 transition-colors",
+                      quoteLength === ql
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                      disabled && "cursor-not-allowed opacity-60",
+                    )}
+                  >
+                    {ql}
+                  </button>
+                ))}
+        </div>
+
         <button
           type="button"
-          onClick={() => onModeChange("time")}
-          disabled={disabled}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
-            mode === "time"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground",
-            disabled && "cursor-not-allowed opacity-60",
-          )}
+          onClick={onRestart}
+          className="rounded-lg border border-border p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+          aria-label="Restart"
         >
-          <Clock size={14} aria-hidden />
-          time
-        </button>
-        <button
-          type="button"
-          onClick={() => onModeChange("words")}
-          disabled={disabled}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
-            mode === "words"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground",
-            disabled && "cursor-not-allowed opacity-60",
-          )}
-        >
-          <TextAa size={14} aria-hidden />
-          words
+          <CaretRight size={14} aria-hidden />
         </button>
       </div>
 
-      <div className="flex items-center gap-1 rounded-lg border border-border p-1">
-        {(mode === "time" ? TIME_OPTIONS : WORD_OPTIONS).map((opt) => {
-          const selected = mode === "time" ? timeOption === opt : wordOption === opt
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() =>
-                mode === "time" ? onTimeOptionChange(opt as TimeOption) : onWordOptionChange(opt as WordOption)
-              }
-              disabled={disabled}
-              className={cn(
-                "rounded-md px-3 py-1.5 transition-colors",
-                selected
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-                disabled && "cursor-not-allowed opacity-60",
-              )}
-            >
-              {opt}
-            </button>
-          )
-        })}
-      </div>
-
-      <button
-        type="button"
-        onClick={onRestart}
-        className="rounded-lg border border-border p-1.5 text-muted-foreground transition-colors hover:text-foreground"
-        aria-label="Restart"
-      >
-        <CaretRight size={14} aria-hidden />
-      </button>
+      {mode === "quotes" && quoteAuthor && (
+        <span className="text-xs text-muted-foreground">— {quoteAuthor}</span>
+      )}
     </div>
   )
 }

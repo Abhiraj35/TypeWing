@@ -1,6 +1,6 @@
 // Pure WPM / accuracy counting math. No React, no browser APIs — easy to test.
 
-export type TestMode = "time" | "words"
+export type TestMode = "time" | "words" | "quotes"
 
 export interface WpmCounts {
   correctWordChars: number
@@ -18,17 +18,10 @@ interface CountParams {
   wordIndex: number
   mode: TestMode
   final: boolean
+  /** False when the test completed by character (no trailing space was typed). */
+  trailingSpace?: boolean
 }
 
-/**
- * Compare what the user typed against the target words and tally character
- * counts. Follows the MonkeyType-style counting model:
- *  - allCorrectChars: every correctly typed character
- *  - incorrectChars:  typed characters that don't match the target
- *  - extraChars:      characters typed beyond the target word length
- *  - missedChars:     target characters never typed (skipped words)
- *  - correctWordChars / correctSpaces: used for WPM (fully correct words)
- */
 export function countWpm({
   targetWords,
   wordInputs,
@@ -36,6 +29,7 @@ export function countWpm({
   wordIndex,
   mode,
   final,
+  trailingSpace,
 }: CountParams): WpmCounts {
   // Invariant: `wordInputs.length === wordIndex` (guards if briefly out of sync).
   const inputWords = [...wordInputs.slice(0, wordIndex), typed]
@@ -49,6 +43,9 @@ export function countWpm({
 
   const isTimedTest = mode === "time"
   const shouldCountPartialLastWord = !final || (final && isTimedTest)
+  // When the test completed by character (no trailing space typed), the empty
+  // string appended to inputWords is a phantom — don't count a space before it.
+  const spaceLimit = trailingSpace !== false ? inputWords.length - 1 : inputWords.length - 2
 
   for (let i = 0; i < inputWords.length; i++) {
     const inputWord = inputWords[i]!
@@ -58,7 +55,7 @@ export function countWpm({
     if (inputWord === targetWord) {
       correctWordChars += targetWord.length
       allCorrectChars += targetWord.length
-      if (i < inputWords.length - 1 && !inputWord.endsWith("\n")) correctSpaces++
+      if (i < spaceLimit && !inputWord.endsWith("\n")) correctSpaces++
     } else if (inputWord.length >= targetWord.length) {
       for (let c = 0; c < inputWord.length; c++) {
         if (c < targetWord.length) {

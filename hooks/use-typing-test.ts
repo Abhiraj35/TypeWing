@@ -3,6 +3,7 @@
 import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useMountEffect } from "@/hooks/use-mount-effect"
+import { getQuote, type QuoteLength } from "@/lib/quotes"
 import { generateWords } from "@/lib/words"
 import { accuracyFromCounts, countWpm, wpmNumeratorFromCounts, type TestMode } from "@/lib/wpm-count"
 import type { ResultStats, WpmSnapshot } from "@/lib/result-types"
@@ -15,6 +16,7 @@ export const WORD_OPTIONS: WordOption[] = [10, 25, 50]
 const MODE_KEY = "kb-mode"
 const TIME_KEY = "kb-time"
 const WORD_KEY = "kb-word"
+const QUOTE_KEY = "kb-quote"
 
 // Enough words that a time test never runs out mid-session.
 const POOL_SIZE = 400
@@ -31,6 +33,8 @@ export function useTypingTest({
   const [mode, setMode] = useState<TestMode>("time")
   const [timeOption, setTimeOption] = useState<TimeOption>(30)
   const [wordOption, setWordOption] = useState<WordOption>(25)
+  const [quoteLength, setQuoteLength] = useState<QuoteLength>("medium")
+  const [quoteAuthor, setQuoteAuthor] = useState<string | null>(null)
 
   const [words, setWords] = useState<string[]>([])
 
@@ -60,7 +64,12 @@ export function useTypingTest({
   // ---- WPM / accuracy helpers ------------------------------------------------
 
   const buildResultStats = useCallback(
-    (snapWordInputs: string[] = wordInputs, snapTyped: string = typed, snapWordIndex: number = wordIndex): ResultStats => {
+    (
+      snapWordInputs: string[] = wordInputs,
+      snapTyped: string = typed,
+      snapWordIndex: number = wordIndex,
+      trailingSpace: boolean = true,
+    ): ResultStats => {
       const elapsed = startTime ? (Date.now() - startTime) / 1000 : elapsedSec
       const elapsedMin = elapsed / 60 || 1 / 60
       const counts = countWpm({
@@ -70,6 +79,7 @@ export function useTypingTest({
         wordIndex: snapWordIndex,
         mode,
         final: true,
+        trailingSpace,
       })
       const wpmValues = wpmHistory.map((s) => s.wpm).filter((v) => v > 0)
       let consistency = 100
@@ -93,13 +103,14 @@ export function useTypingTest({
         elapsedSeconds: Math.round(elapsed),
         correctedErrors: correctedErrorsRef.current,
         mode,
-        modeDetail: mode === "time" ? String(timeOption) : String(wordOption),
+        modeDetail: mode === "time" ? String(timeOption) : mode === "words" ? String(wordOption) : quoteLength,
+        author: quoteAuthor ?? undefined,
         wpmHistory,
         wordInputs: snapWordInputs,
         targetWords: words,
       }
     },
-    [wordInputs, typed, wordIndex, startTime, elapsedSec, words, mode, timeOption, wordOption, wpmHistory],
+    [wordInputs, typed, wordIndex, startTime, elapsedSec, words, mode, timeOption, wordOption, quoteLength, quoteAuthor, wpmHistory],
   )
 
   const finishTestRef = useRef<() => void>(() => {})
@@ -126,14 +137,29 @@ export function useTypingTest({
 
   // ---- Restart (with optional overrides) ---------------------------------------
 
+  interface ResetOverrides {
+    mode?: TestMode
+    timeOption?: TimeOption
+    wordOption?: WordOption
+    quoteLength?: QuoteLength
+  }
+
   const resetTestWith = useCallback(
-    (overrides?: { mode?: TestMode; timeOption?: TimeOption; wordOption?: WordOption }) => {
+    (overrides?: ResetOverrides) => {
       const m = overrides?.mode ?? mode
       const to = overrides?.timeOption ?? timeOption
       const wo = overrides?.wordOption ?? wordOption
+      const ql = overrides?.quoteLength ?? quoteLength
 
-      const count = m === "time" ? POOL_SIZE : wo
-      setWords(generateWords(count))
+      const count = m === "time" ? POOL_SIZE : m === "words" ? wo : 0
+      if (m === "quotes") {
+        const { words: quoteWords, author } = getQuote(ql)
+        setWords(quoteWords)
+        setQuoteAuthor(author)
+      } else {
+        setWords(generateWords(count))
+        setQuoteAuthor(null)
+      }
 
       setTyped("")
       setWordIndex(0)
@@ -161,10 +187,10 @@ export function useTypingTest({
       onTypingActiveChange?.(false)
       inputRef.current?.focus()
     },
-    [mode, timeOption, wordOption, onFinished, onTypingActiveChange],
+    [mode, timeOption, wordOption, quoteLength, onFinished, onTypingActiveChange],
   )
 
-  const resetTest = useCallback((overrides?: { mode?: TestMode; timeOption?: TimeOption; wordOption?: WordOption }) => {
+  const resetTest = useCallback((overrides?: ResetOverrides) => {
     resetTestWith(overrides)
   }, [resetTestWith])
 
@@ -179,22 +205,36 @@ export function useTypingTest({
     let storedMode: TestMode | null = null
     let storedTime: TimeOption | null = null
     let storedWord: WordOption | null = null
+    let storedQuote: QuoteLength | null = null
     try {
       storedMode = localStorage.getItem(MODE_KEY) as TestMode | null
       storedTime = Number(localStorage.getItem(TIME_KEY)) as TimeOption | null
       storedWord = Number(localStorage.getItem(WORD_KEY)) as WordOption | null
+      storedQuote = localStorage.getItem(QUOTE_KEY) as QuoteLength | null
     } catch {
       // ignore quota / privacy errors
     }
 
-    const m: TestMode = storedMode === "words" ? "words" : "time"
+    const m: TestMode =
+      storedMode === "words" ? "words" : storedMode === "quotes" ? "quotes" : "time"
     const to: TimeOption = [15, 30, 60].includes(storedTime as TimeOption) ? (storedTime as TimeOption) : 30
     const wo: WordOption = [10, 25, 50].includes(storedWord as WordOption) ? (storedWord as WordOption) : 25
+    const ql: QuoteLength =
+      storedQuote === "short" || storedQuote === "medium" || storedQuote === "long"
+        ? storedQuote
+        : "medium"
 
     setMode(m)
     setTimeOption(to)
     setWordOption(wo)
-    setWords(generateWords(m === "time" ? POOL_SIZE : wo))
+    setQuoteLength(ql)
+    if (m === "quotes") {
+      const { words: quoteWords, author } = getQuote(ql)
+      setWords(quoteWords)
+      setQuoteAuthor(author)
+    } else {
+      setWords(generateWords(m === "time" ? POOL_SIZE : wo))
+    }
     setTimeLeft(to)
   })
 
@@ -280,7 +320,7 @@ export function useTypingTest({
         const nextInputs = [...wordInputs, typed]
         const nextIndex = wordIndex + 1
 
-        if (mode === "words" && nextIndex >= words.length) {
+        if (mode !== "time" && nextIndex >= words.length) {
           setWordInputs(nextInputs)
           finishTest(buildResultStats(nextInputs, "", nextIndex))
           return
@@ -296,6 +336,7 @@ export function useTypingTest({
       if (e.key === "Backspace") {
         if (typed.length === 0 && wordIndex > 0) {
           const prevInput = wordInputs[wordIndex - 1]
+          if (prevInput === words[wordIndex - 1]) correctSpacesRef.current -= 1
           setWordIndex((prev) => prev - 1)
           setTyped(prevInput)
           setWordInputs((prev) => prev.slice(0, -1))
@@ -319,15 +360,19 @@ export function useTypingTest({
         const charIdx = typed.length
         if (charIdx < currentWord.length && e.key === currentWord[charIdx]) correctCharsRef.current += 1
 
-        // For word mode: finishing the last word completes the test.
-        if (mode === "words" && wordIndex === words.length - 1 && nextTyped === currentWord) {
+        // For words/quotes mode: finishing the last word completes the test.
+        // Quotes finish on the last character (no trailing space needed); words
+        // mode also completes once the final word is fully typed, like the
+        // reference. Both tolerate a wrong final character (fixable before it
+        // is typed, then the test ends).
+        if (mode !== "time" && wordIndex === words.length - 1 && nextTyped.length >= currentWord.length) {
           for (let i = 0; i < Math.min(nextTyped.length, currentWord.length); i++) {
             if (nextTyped[i] !== currentWord[i]) errorsThisSecondRef.current++
           }
           if (nextTyped.length > currentWord.length) errorsThisSecondRef.current++
           const nextInputs = [...wordInputs, nextTyped]
           setWordInputs(nextInputs)
-          finishTest(buildResultStats(nextInputs, "", wordIndex + 1))
+          finishTest(buildResultStats(nextInputs, "", wordIndex + 1, false))
         }
       }
     },
@@ -378,6 +423,19 @@ export function useTypingTest({
     [resetTest],
   )
 
+  const onQuoteLengthChange = useCallback(
+    (ql: QuoteLength) => {
+      setQuoteLength(ql)
+      try {
+        localStorage.setItem(QUOTE_KEY, ql)
+      } catch {
+        /* ignore */
+      }
+      resetTest({ quoteLength: ql, mode: "quotes" })
+    },
+    [resetTest],
+  )
+
   // Re-focus the hidden input when clicking anywhere on the words container.
   const handleFocus = useCallback(() => {
     inputRef.current?.focus()
@@ -394,6 +452,8 @@ export function useTypingTest({
     mode,
     timeOption,
     wordOption,
+    quoteLength,
+    quoteAuthor,
     words,
     typed,
     wordIndex,
@@ -413,6 +473,7 @@ export function useTypingTest({
     onModeChange,
     onTimeOptionChange,
     onWordOptionChange,
+    onQuoteLengthChange,
   } as const
 }
 
