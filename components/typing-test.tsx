@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { ArrowClockwise, CaretRight, Clock, Quotes, TextAa } from "@phosphor-icons/react"
+import { ArrowClockwise, CaretRight, Clock, CursorClick, Quotes, TextAa } from "@phosphor-icons/react"
 import { ResultsScreen } from "@/components/results-screen"
 import { Keyboard } from "@/components/ui/Keyboard"
 import { WordItem } from "@/components/word-item"
@@ -32,6 +32,7 @@ export function TypingTest() {
     wordInputs,
     started,
     finished,
+    isFocused,
     timeLeft,
     wpm,
     accuracy,
@@ -40,6 +41,8 @@ export function TypingTest() {
     activeWordRef,
     handleKeyDown,
     handleFocus,
+    handleInputBlur,
+    handleInputFocus,
     onRestart,
     onNext,
     onModeChange,
@@ -49,12 +52,11 @@ export function TypingTest() {
   } = useTypingTest()
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
-  const targetRef = useRef<number | null>(null)
-  const rafRef = useRef<number | null>(null)
 
-  // Smoothly scroll the word viewport so the active word stays vertically
-  // centered. Re-centring absorbs any layout reflow (e.g. overtyping a word)
-  // into gentle motion instead of a sudden jump.
+  // Keep the active word on screen without constant motion. Instead of
+  // re-centering the whole text block on every keystroke (which made the words
+  // drift up/down), only scroll when the active word leaves the visible box,
+  // and only as far as needed to bring it back - like monkeytype.
   useEffect(() => {
     const container = scrollRef.current
     const active = activeWordRef.current
@@ -63,32 +65,18 @@ export function TypingTest() {
     const maxScroll = container.scrollHeight - container.clientHeight
     if (maxScroll <= 0) return
 
-    const target = active.offsetTop - container.clientHeight / 2 + active.offsetHeight / 2
-    targetRef.current = Math.max(0, Math.min(target, maxScroll))
+    const rowBottom = active.offsetTop + active.offsetHeight
+    const viewBottom = container.scrollTop + container.clientHeight
 
-    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-
-    const startTop = container.scrollTop
-    const delta = targetRef.current - startTop
-    const duration = 260
-    const startMs = performance.now()
-
-    const step = (now: number) => {
-      const t = Math.min(1, (now - startMs) / duration)
-      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
-      container.scrollTop = startTop + delta * eased
-      if (t < 1 && container.scrollTop !== targetRef.current) {
-        rafRef.current = requestAnimationFrame(step)
-      }
+    if (rowBottom > viewBottom) {
+      container.scrollTo({
+        top: Math.min(rowBottom - container.clientHeight, maxScroll),
+        behavior: "smooth",
+      })
+    } else if (active.offsetTop < container.scrollTop) {
+      container.scrollTo({ top: active.offsetTop, behavior: "smooth" })
     }
-    rafRef.current = requestAnimationFrame(step)
   }, [wordIndex, typed, finished, activeWordRef])
-
-  useEffect(() => {
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-    }
-  }, [])
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-site flex-col px-6 py-8">
@@ -133,7 +121,8 @@ export function TypingTest() {
                 className="relative flex flex-wrap gap-x-2.5 gap-y-1 leading-relaxed overflow-hidden"
                 style={{
                   fontFamily: fontCssFamily,
-                  height: "5em",
+                  fontSize: "1.5rem",
+                  height: "calc(4.875em + 0.5rem)",
                 }}
               >
                 <input
@@ -142,6 +131,8 @@ export function TypingTest() {
                   aria-describedby="active-word-instruction"
                   className="absolute opacity-0"
                   onKeyDown={handleKeyDown}
+                  onBlur={handleInputBlur}
+                  onFocus={handleInputFocus}
                   value={typed}
                   onChange={() => {}}
                   autoFocus
@@ -162,7 +153,6 @@ export function TypingTest() {
                     const isActive = idx === wordIndex
                     const isPast = idx < wordIndex
                     const displayInput = isActive ? typed : isPast ? wordInputs[idx] ?? "" : ""
-                    const hasError = isPast && wordInputs[idx] !== word
                     return (
                       <WordItem
                         key={`${word}-${idx}`}
@@ -170,12 +160,25 @@ export function TypingTest() {
                         displayInput={displayInput}
                         isActive={isActive}
                         isPast={isPast}
-                        hasError={hasError}
                         elemRef={isActive ? activeWordRef : undefined}
                       />
                     )
                   })
                 })()}
+
+                {!isFocused && (
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.focus()}
+                    className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center bg-background/60 backdrop-blur-sm"
+                    aria-label="Click to start"
+                  >
+                    <span className="flex items-center gap-2 text-sm font-medium text-primary">
+                      <CursorClick size={16} aria-hidden />
+                      Click to start
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -193,7 +196,10 @@ export function TypingTest() {
 
             {keyboardVisible && (
               <div className="mt-8 flex max-w-full justify-center overflow-x-auto">
-                <Keyboard language={keyboardLanguage} />
+                <Keyboard
+                  language={keyboardLanguage}
+                  className={cn(started && !finished && "opacity-75 transition-opacity duration-300")}
+                />
               </div>
             )}
           </div>

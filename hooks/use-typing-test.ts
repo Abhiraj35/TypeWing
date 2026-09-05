@@ -43,6 +43,7 @@ export function useTypingTest({
   const [wordInputs, setWordInputs] = useState<string[]>([])
   const [started, setStarted] = useState(false)
   const [finished, setFinished] = useState(false)
+  const [isFocused, setIsFocused] = useState(true)
   const [timeLeft, setTimeLeft] = useState(30)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [elapsedSec, setElapsedSec] = useState(0)
@@ -53,6 +54,11 @@ export function useTypingTest({
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [frozenStats, setFrozenStats] = useState<ResultStats | null>(null)
+
+  // Effective test start instant. Shifted forward by each pause so the realtime
+  // clock never counts time spent unfocused (timer/WPM/idle all stay honest).
+  const startTimeRef = useRef<number | null>(null)
+  const pausedSinceMs = useRef<number | null>(null)
 
   // Cumulative counters (refs so they don't trigger re-renders on every keystroke).
   const correctCharsRef = useRef(0)
@@ -169,6 +175,9 @@ export function useTypingTest({
       setStartTime(null)
       setWpmHistory([])
       setTimeLeft(to)
+      setIsFocused(true)
+      startTimeRef.current = null
+      pausedSinceMs.current = null
 
       correctCharsRef.current = 0
       correctSpacesRef.current = 0
@@ -259,13 +268,18 @@ export function useTypingTest({
 
   const startTest = useCallback(() => {
     setStarted(true)
-    setStartTime(Date.now())
+    startTimeRef.current = Date.now()
+    setStartTime(startTimeRef.current)
+    pausedSinceMs.current = null
     onTypingActiveChange?.(true)
 
-    const startedAt = Date.now()
     let lastWpmSek = 0
     timerRef.current = setInterval(() => {
-      const sek = (Date.now() - startedAt) / 1000
+      // While the input is blurred (user clicked away), freeze the clock so the
+      // countdown and WPM don't keep ticking behind the overlay.
+      if (pausedSinceMs.current !== null) return
+
+      const sek = (Date.now() - (startTimeRef.current ?? Date.now())) / 1000
       setElapsedSec(sek)
 
       // WPM history snapshot once per second.
@@ -441,6 +455,25 @@ export function useTypingTest({
     inputRef.current?.focus()
   }, [])
 
+  // Pause the clock when the input loses focus (user clicks/steps away).
+  const handleInputBlur = useCallback(() => {
+    if (!started || finished) return
+    if (pausedSinceMs.current !== null) return
+    pausedSinceMs.current = Date.now()
+    setIsFocused(false)
+  }, [started, finished])
+
+  // Resume: shift the effective start forward by the pause gap so frozen time
+  // is never counted, then restore focus state.
+  const handleInputFocus = useCallback(() => {
+    if (pausedSinceMs.current !== null) {
+      startTimeRef.current = (startTimeRef.current ?? Date.now()) + (Date.now() - pausedSinceMs.current)
+      setStartTime(startTimeRef.current)
+      pausedSinceMs.current = null
+    }
+    setIsFocused(true)
+  }, [])
+
   // Cleanup timers on unmount.
   useEffect(() => {
     return () => {
@@ -460,6 +493,7 @@ export function useTypingTest({
     wordInputs,
     started,
     finished,
+    isFocused,
     timeLeft,
     wpm: liveStats.wpm,
     accuracy: liveStats.accuracy,
@@ -468,6 +502,8 @@ export function useTypingTest({
     activeWordRef,
     handleKeyDown,
     handleFocus,
+    handleInputBlur,
+    handleInputFocus,
     onRestart: resetTest,
     onNext: nextTest,
     onModeChange,
