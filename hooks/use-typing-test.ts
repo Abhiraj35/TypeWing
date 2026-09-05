@@ -268,8 +268,8 @@ export function useTypingTest({
       const sek = (Date.now() - startedAt) / 1000
       setElapsedSec(sek)
 
-      // WPM history snapshot once per second (only meaningful for time mode).
-      if (mode === "time" && Math.floor(sek) > lastWpmSek) {
+      // WPM history snapshot once per second.
+      if (Math.floor(sek) > lastWpmSek) {
         lastWpmSek = Math.floor(sek)
         const elapsedMin = sek / 60
         const snapWpm = elapsedMin > 0 ? Math.round((correctCharsRef.current + correctSpacesRef.current) / 5 / elapsedMin) : 0
