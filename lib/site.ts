@@ -3,7 +3,7 @@ export const siteConfig = {
   shortName: "TypeWing",
   description:
     "TypeWing is a clean, focused typing test built to measure and improve your typing speed and accuracy over time.",
-  url: "https://typewing.example.com",
+  url: "https://type-wing.vercel.app",
   themeColor: "#18181B",
   backgroundColor: "#ffffff",
 } as const;

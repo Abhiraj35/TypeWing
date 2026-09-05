@@ -49,9 +49,13 @@ export interface FontOption {
   tag: "mono" | "display" | "serif" | "handwriting"
 }
 
+export type KeyboardLanguage = "english" | "french" | "german"
+
 export interface Settings {
   accent: AccentColor
   font: TypingFont
+  keyboardVisible: boolean
+  keyboardLanguage: KeyboardLanguage
 }
 
 export const ACCENT_COLORS: AccentOption[] = [
@@ -97,4 +101,12 @@ export const FONT_OPTIONS: FontOption[] = [
 export const DEFAULT_SETTINGS: Settings = {
   accent: "teal",
   font: "geist-mono",
+  keyboardVisible: false,
+  keyboardLanguage: "english",
 }
+
+export const KEYBOARD_LANGUAGE_OPTIONS: { id: KeyboardLanguage; label: string }[] = [
+  { id: "english", label: "English" },
+  { id: "french", label: "French" },
+  { id: "german", label: "German" },
+]

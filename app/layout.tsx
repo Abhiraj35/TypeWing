@@ -47,7 +47,7 @@ export default function RootLayout({
         doto.variable,
       )}
     >
-      <body>
+      <body suppressHydrationWarning>
         <ThemeProvider>
           <SettingsProvider>
             <AppChrome>{children}</AppChrome>

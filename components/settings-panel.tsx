@@ -6,6 +6,7 @@ import { X } from "@phosphor-icons/react"
 import {
   ACCENT_COLORS,
   FONT_OPTIONS,
+  KEYBOARD_LANGUAGE_OPTIONS,
   useSettings,
 } from "@/components/settings-context"
 import { cn } from "@/lib/utils"
@@ -21,9 +22,25 @@ const THEME_OPTIONS = [
   { id: "system", label: "System" },
 ] as const
 
+const PREVIEW_TEXT = {
+  english: "The quick brown fox jumps over the lazy dog.",
+  french: "Portez ce vieux whisky au juge blond qui fume.",
+  german: "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich.",
+} as const
+
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
-  const { accent, setAccent, font, setFont, fontCssFamily } = useSettings()
-  const { setTheme, resolvedTheme } = useTheme()
+  const {
+    accent,
+    setAccent,
+    font,
+    setFont,
+    fontCssFamily,
+    keyboardVisible,
+    setKeyboardVisible,
+    keyboardLanguage,
+    setKeyboardLanguage,
+  } = useSettings()
+  const { setTheme, theme } = useTheme()
 
   return (
     <AnimatePresence>
@@ -66,10 +83,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 <SectionLabel>Theme</SectionLabel>
                 <div className="mt-3 grid grid-cols-3 gap-1.5">
                   {THEME_OPTIONS.map((t) => {
-                    const selected =
-                      t.id === "system"
-                        ? resolvedTheme === undefined
-                        : resolvedTheme === t.id
+                    const selected = theme === t.id
                     return (
                       <button
                         key={t.id}
@@ -145,6 +159,68 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 </div>
               </section>
 
+              {/* Keyboard */}
+              <section>
+                <SectionLabel>Keyboard</SectionLabel>
+                <button
+                  type="button"
+                  onClick={() => setKeyboardVisible(!keyboardVisible)}
+                  aria-pressed={keyboardVisible}
+                  className={cn(
+                    "mt-3 flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg border px-3.5 py-3 text-left text-sm transition-colors outline-none",
+                    "border-input bg-background hover:border-primary/50 hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    keyboardVisible
+                      ? "text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <span className="font-medium">Show on-screen keyboard</span>
+                  <span
+                    className={cn(
+                      "relative h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors",
+                      keyboardVisible
+                        ? "bg-primary"
+                        : "bg-muted-foreground/30",
+                    )}
+                    aria-hidden
+                  >
+                    <span
+                      className={cn(
+                        "block h-5 w-5 rounded-full bg-background shadow-sm transition-transform duration-200",
+                        keyboardVisible ? "translate-x-5" : "translate-x-0",
+                      )}
+                    />
+                  </span>
+                </button>
+              </section>
+
+              {/* Keyboard language */}
+              <section>
+                <SectionLabel>Language</SectionLabel>
+                <div className="mt-3 grid grid-cols-3 gap-1.5">
+                  {KEYBOARD_LANGUAGE_OPTIONS.map((option) => {
+                    const selected = keyboardLanguage === option.id
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setKeyboardLanguage(option.id)}
+                        aria-pressed={selected}
+                        className={cn(
+                          "cursor-pointer rounded-lg border py-1.5 text-[11px] font-medium transition-colors outline-none",
+                          "hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                          selected
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-input bg-background text-muted-foreground",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+
               {/* Preview of current typing font */}
               <section>
                 <SectionLabel>Preview</SectionLabel>
@@ -152,7 +228,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                   className="mt-3 rounded-lg border border-border bg-muted/20 px-3 py-3 text-lg"
                   style={{ fontFamily: fontCssFamily }}
                 >
-                  The quick brown fox jumps over the lazy dog.
+                  {PREVIEW_TEXT[keyboardLanguage]}
                 </p>
               </section>
             </div>

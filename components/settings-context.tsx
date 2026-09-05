@@ -1,17 +1,27 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react"
 import { useMountEffect } from "@/hooks/use-mount-effect"
 import {
   DEFAULT_SETTINGS,
   FONT_OPTIONS,
   type AccentColor,
+  type KeyboardLanguage,
   type Settings,
   type TypingFont,
 } from "@/lib/settings-data"
 
-export type { AccentColor, Settings, TypingFont } from "@/lib/settings-data"
-export { ACCENT_COLORS, FONT_OPTIONS } from "@/lib/settings-data"
+export type {
+  AccentColor,
+  KeyboardLanguage,
+  Settings,
+  TypingFont,
+} from "@/lib/settings-data"
+export {
+  ACCENT_COLORS,
+  FONT_OPTIONS,
+  KEYBOARD_LANGUAGE_OPTIONS,
+} from "@/lib/settings-data"
 
 interface SettingsContextValue {
   accent: AccentColor
@@ -19,6 +29,10 @@ interface SettingsContextValue {
   font: TypingFont
   setFont: (f: TypingFont) => void
   fontCssFamily: string
+  keyboardVisible: boolean
+  setKeyboardVisible: (visible: boolean) => void
+  keyboardLanguage: KeyboardLanguage
+  setKeyboardLanguage: (lang: KeyboardLanguage) => void
   settingsLoaded: boolean
 }
 
@@ -48,7 +62,30 @@ function applyFontToDom(fontId: TypingFont) {
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [accent, setAccentState] = useState<AccentColor>(DEFAULT_SETTINGS.accent)
   const [font, setFontState] = useState<TypingFont>(DEFAULT_SETTINGS.font)
+  const [keyboardVisible, setKeyboardVisibleState] = useState<boolean>(
+    DEFAULT_SETTINGS.keyboardVisible,
+  )
+  const [keyboardLanguage, setKeyboardLanguageState] = useState<KeyboardLanguage>(
+    DEFAULT_SETTINGS.keyboardLanguage,
+  )
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+
+  const settingsRef = useRef<Settings>({
+    accent: DEFAULT_SETTINGS.accent,
+    font: DEFAULT_SETTINGS.font,
+    keyboardVisible: DEFAULT_SETTINGS.keyboardVisible,
+    keyboardLanguage: DEFAULT_SETTINGS.keyboardLanguage,
+  })
+
+  // Persist the current snapshot of settings to localStorage.
+  const persist = useCallback((next: Partial<Settings>) => {
+    settingsRef.current = { ...settingsRef.current, ...next }
+    try {
+      localStorage.setItem("tf-settings", JSON.stringify(settingsRef.current))
+    } catch {
+      // ignore quota / privacy errors
+    }
+  }, [])
 
   useMountEffect(() => {
     let saved: Partial<Settings> = {}
@@ -62,9 +99,30 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setAccentState(initialAccent)
     applyAccentToDom(initialAccent)
 
-    if (saved.font) {
-      setFontState(saved.font as TypingFont)
-      applyFontToDom(saved.font as TypingFont)
+    const initialFont = (saved.font as TypingFont) ?? DEFAULT_SETTINGS.font
+    setFontState(initialFont)
+    applyFontToDom(initialFont)
+
+    const initialVisible =
+      typeof saved.keyboardVisible === "boolean"
+        ? saved.keyboardVisible
+        : DEFAULT_SETTINGS.keyboardVisible
+    setKeyboardVisibleState(initialVisible)
+
+    const initialLanguage = (
+      saved.keyboardLanguage === "french" ||
+      saved.keyboardLanguage === "german" ||
+      saved.keyboardLanguage === "english"
+        ? saved.keyboardLanguage
+        : DEFAULT_SETTINGS.keyboardLanguage
+    ) as KeyboardLanguage
+    setKeyboardLanguageState(initialLanguage)
+
+    settingsRef.current = {
+      accent: initialAccent,
+      font: initialFont,
+      keyboardVisible: initialVisible,
+      keyboardLanguage: initialLanguage,
     }
 
     setSettingsLoaded(true)
@@ -73,13 +131,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setAccent = (c: AccentColor) => {
     setAccentState(c)
     applyAccentToDom(c)
-    localStorage.setItem("tf-settings", JSON.stringify({ accent: c, font }))
+    persist({ accent: c })
   }
 
   const setFont = (f: TypingFont) => {
     setFontState(f)
     applyFontToDom(f)
-    localStorage.setItem("tf-settings", JSON.stringify({ accent, font: f }))
+    persist({ font: f })
+  }
+
+  const setKeyboardVisible = (visible: boolean) => {
+    setKeyboardVisibleState(visible)
+    persist({ keyboardVisible: visible })
+  }
+
+  const setKeyboardLanguage = (lang: KeyboardLanguage) => {
+    setKeyboardLanguageState(lang)
+    persist({ keyboardLanguage: lang })
   }
 
   const fontCssFamily =
@@ -93,6 +161,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         font,
         setFont,
         fontCssFamily,
+        keyboardVisible,
+        setKeyboardVisible,
+        keyboardLanguage,
+        setKeyboardLanguage,
         settingsLoaded,
       }}
     >

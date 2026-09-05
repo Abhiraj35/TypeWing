@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { ArrowClockwise, CaretRight, Clock, Quotes, TextAa } from "@phosphor-icons/react"
 import { ResultsScreen } from "@/components/results-screen"
+import { Keyboard } from "@/components/ui/Keyboard"
 import { WordItem } from "@/components/word-item"
 import { useSettings } from "@/components/settings-context"
 import {
@@ -17,7 +18,7 @@ import type { TestMode } from "@/lib/wpm-count"
 import { cn } from "@/lib/utils"
 
 export function TypingTest() {
-  const { fontCssFamily } = useSettings()
+  const { fontCssFamily, keyboardVisible, keyboardLanguage } = useSettings()
 
   const {
     mode,
@@ -189,6 +190,12 @@ export function TypingTest() {
                 Restart
               </button>
             </div>
+
+            {keyboardVisible && (
+              <div className="mt-8 flex max-w-full justify-center overflow-x-auto">
+                <Keyboard language={keyboardLanguage} />
+              </div>
+            )}
           </div>
         )}
       </div>
