@@ -101,7 +101,7 @@ export const FONT_OPTIONS: FontOption[] = [
 export const DEFAULT_SETTINGS: Settings = {
   accent: "teal",
   font: "geist-mono",
-  keyboardVisible: false,
+  keyboardVisible: true,
   keyboardLanguage: "english",
 }
 

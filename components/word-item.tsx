@@ -10,8 +10,6 @@ export interface WordItemProps {
   displayInput: string
   isActive: boolean
   isPast: boolean
-  /** True when a completed word was typed with any error → red underline. */
-  hasError: boolean
   elemRef?: RefObject<HTMLDivElement | null>
 }
 
@@ -20,28 +18,21 @@ export const WordItem = memo(function WordItem({
   displayInput,
   isActive,
   isPast,
-  hasError,
   elemRef,
 }: WordItemProps) {
   const cursorAtEnd = isActive && displayInput.length >= word.length
 
   return (
-    <div
-      ref={isActive ? elemRef : undefined}
-      className={cn(
-        "relative whitespace-nowrap",
-        isPast &&
-          hasError &&
-          "after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:rounded-full after:bg-destructive/50",
-      )}
-    >
+    <div ref={isActive ? elemRef : undefined} className="relative whitespace-nowrap">
       {word.split("").map((char, cIdx) => {
-        let color = "text-muted-foreground/40"
+        let color = "text-foreground"
         if (isPast || isActive) {
           if (cIdx < displayInput.length) {
-            color = displayInput[cIdx] === char ? "text-foreground" : "text-destructive"
-          } else {
-            color = "text-muted-foreground/40"
+            // Typed letters fade to dim; wrong letters stay red for feedback.
+            color = displayInput[cIdx] === char ? "text-muted-foreground/40" : "text-destructive"
+          } else if (isPast) {
+            // An incomplete past word still needs an error indicator.
+            color = displayInput !== word ? "text-destructive" : "text-muted-foreground/40"
           }
         }
         const isLastChar = cIdx === word.length - 1
