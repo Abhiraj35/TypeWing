@@ -1,12 +1,12 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { AnimatePresence, motion } from "motion/react"
 import { X } from "@phosphor-icons/react"
 import {
   ACCENT_COLORS,
   FONT_OPTIONS,
   KEYBOARD_LANGUAGE_OPTIONS,
+  KEYBOARD_SOUND_OPTIONS,
   useSettings,
 } from "@/components/settings-context"
 import { cn } from "@/lib/utils"
@@ -15,12 +15,6 @@ interface SettingsPanelProps {
   open: boolean
   onClose: () => void
 }
-
-const THEME_OPTIONS = [
-  { id: "light", label: "Light" },
-  { id: "dark", label: "Dark" },
-  { id: "system", label: "System" },
-] as const
 
 const PREVIEW_TEXT = {
   english: "The quick brown fox jumps over the lazy dog.",
@@ -39,8 +33,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     setKeyboardVisible,
     keyboardLanguage,
     setKeyboardLanguage,
+    keyboardSound,
+    setKeyboardSound,
+    keyboardSoundVolume,
+    setKeyboardSoundVolume,
   } = useSettings()
-  const { setTheme, theme } = useTheme()
 
   return (
     <AnimatePresence>
@@ -78,33 +75,6 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </div>
 
             <div className="flex-1 space-y-7 overflow-y-auto px-4 py-5">
-              {/* Theme */}
-              <section>
-                <SectionLabel>Theme</SectionLabel>
-                <div className="mt-3 grid grid-cols-3 gap-1.5">
-                  {THEME_OPTIONS.map((t) => {
-                    const selected = theme === t.id
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setTheme(t.id)}
-                        aria-pressed={selected}
-                        className={cn(
-                          "cursor-pointer rounded-lg border py-1.5 text-[11px] font-medium transition-colors outline-none",
-                          "hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                          selected
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-input bg-background text-muted-foreground",
-                        )}
-                      >
-                        {t.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
-
               {/* Accent */}
               <section>
                 <SectionLabel>Accent</SectionLabel>
@@ -220,6 +190,54 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                   })}
                 </div>
               </section>
+
+              {/* Keyboard sound */}
+              <section>
+                <SectionLabel>Sound</SectionLabel>
+                <div className="mt-3 flex flex-col gap-1.5">
+                  {KEYBOARD_SOUND_OPTIONS.map((option) => {
+                    const selected = keyboardSound === option.id
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setKeyboardSound(option.id)}
+                        aria-pressed={selected}
+                        className={cn(
+                          "cursor-pointer rounded-lg border px-3 py-2 text-left text-sm transition-colors outline-none",
+                          "hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                          selected
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-input bg-background text-muted-foreground",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+
+              {/* Keyboard sound volume */}
+              {keyboardSound !== "off" && (
+                <section>
+                  <SectionLabel>Volume</SectionLabel>
+                  <div className="mt-3 flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={keyboardSoundVolume}
+                      onChange={(e) => setKeyboardSoundVolume(Number(e.target.value))}
+                      aria-label="Sound volume"
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted-foreground/30 accent-primary"
+                    />
+                    <span className="w-9 shrink-0 text-right font-mono text-xs text-muted-foreground">
+                      {keyboardSoundVolume}%
+                    </span>
+                  </div>
+                </section>
+              )}
 
               {/* Preview of current typing font */}
               <section>

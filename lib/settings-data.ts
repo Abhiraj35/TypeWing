@@ -51,11 +51,21 @@ export interface FontOption {
 
 export type KeyboardLanguage = "english" | "french" | "german"
 
+export type KeyboardSoundId = "off" | "cherrymx-blue-abs" | "cherrymx-blue-pbt" | "cherrymx-red-pbt" | "gateron-browns-revolt"
+
+export interface KeyboardSoundOption {
+  id: KeyboardSoundId
+  label: string
+  configUrl: string | null
+}
+
 export interface Settings {
   accent: AccentColor
   font: TypingFont
   keyboardVisible: boolean
   keyboardLanguage: KeyboardLanguage
+  keyboardSound: KeyboardSoundId
+  keyboardSoundVolume: number
 }
 
 export const ACCENT_COLORS: AccentOption[] = [
@@ -103,7 +113,17 @@ export const DEFAULT_SETTINGS: Settings = {
   font: "geist-mono",
   keyboardVisible: true,
   keyboardLanguage: "english",
+  keyboardSound: "cherrymx-blue-pbt",
+  keyboardSoundVolume: 50,
 }
+
+export const KEYBOARD_SOUND_OPTIONS: KeyboardSoundOption[] = [
+  { id: "off", label: "Off", configUrl: null },
+  { id: "cherrymx-blue-abs", label: "Cherry Blue (ABS)", configUrl: "/sounds/cherrymx-blue-abs/config.json" },
+  { id: "cherrymx-blue-pbt", label: "Cherry Blue (PBT)", configUrl: "/sounds/cherrymx-blue-pbt/config.json" },
+  { id: "cherrymx-red-pbt", label: "Cherry Red (PBT)", configUrl: "/sounds/cherrymx-red-pbt/config.json" },
+  { id: "gateron-browns-revolt", label: "Gateron Browns", configUrl: "/sounds/gateron-browns-revolt/config.json" },
+]
 
 export const KEYBOARD_LANGUAGE_OPTIONS: { id: KeyboardLanguage; label: string }[] = [
   { id: "english", label: "English" },

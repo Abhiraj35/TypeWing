@@ -7,6 +7,7 @@ import {
   FONT_OPTIONS,
   type AccentColor,
   type KeyboardLanguage,
+  type KeyboardSoundId,
   type Settings,
   type TypingFont,
 } from "@/lib/settings-data"
@@ -14,6 +15,7 @@ import {
 export type {
   AccentColor,
   KeyboardLanguage,
+  KeyboardSoundId,
   Settings,
   TypingFont,
 } from "@/lib/settings-data"
@@ -21,6 +23,7 @@ export {
   ACCENT_COLORS,
   FONT_OPTIONS,
   KEYBOARD_LANGUAGE_OPTIONS,
+  KEYBOARD_SOUND_OPTIONS,
 } from "@/lib/settings-data"
 
 interface SettingsContextValue {
@@ -33,6 +36,11 @@ interface SettingsContextValue {
   setKeyboardVisible: (visible: boolean) => void
   keyboardLanguage: KeyboardLanguage
   setKeyboardLanguage: (lang: KeyboardLanguage) => void
+  keyboardSound: KeyboardSoundId
+  setKeyboardSound: (sound: KeyboardSoundId) => void
+  /** Volume 0–100. */
+  keyboardSoundVolume: number
+  setKeyboardSoundVolume: (volume: number) => void
   settingsLoaded: boolean
 }
 
@@ -68,6 +76,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [keyboardLanguage, setKeyboardLanguageState] = useState<KeyboardLanguage>(
     DEFAULT_SETTINGS.keyboardLanguage,
   )
+  const [keyboardSound, setKeyboardSoundState] = useState<KeyboardSoundId>(
+    DEFAULT_SETTINGS.keyboardSound,
+  )
+  const [keyboardSoundVolume, setKeyboardSoundVolumeState] = useState<number>(
+    DEFAULT_SETTINGS.keyboardSoundVolume,
+  )
   const [settingsLoaded, setSettingsLoaded] = useState(false)
 
   const settingsRef = useRef<Settings>({
@@ -75,6 +89,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     font: DEFAULT_SETTINGS.font,
     keyboardVisible: DEFAULT_SETTINGS.keyboardVisible,
     keyboardLanguage: DEFAULT_SETTINGS.keyboardLanguage,
+    keyboardSound: DEFAULT_SETTINGS.keyboardSound,
+    keyboardSoundVolume: DEFAULT_SETTINGS.keyboardSoundVolume,
   })
 
   // Persist the current snapshot of settings to localStorage.
@@ -118,11 +134,32 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     ) as KeyboardLanguage
     setKeyboardLanguageState(initialLanguage)
 
+    const initialSound = [
+      "off",
+      "cherrymx-blue-abs",
+      "cherrymx-blue-pbt",
+      "cherrymx-red-pbt",
+      "gateron-browns-revolt",
+    ].includes(saved.keyboardSound as string)
+      ? (saved.keyboardSound as KeyboardSoundId)
+      : DEFAULT_SETTINGS.keyboardSound
+    setKeyboardSoundState(initialSound)
+
+    const initialVolume =
+      typeof saved.keyboardSoundVolume === "number" &&
+      saved.keyboardSoundVolume >= 0 &&
+      saved.keyboardSoundVolume <= 100
+        ? saved.keyboardSoundVolume
+        : DEFAULT_SETTINGS.keyboardSoundVolume
+    setKeyboardSoundVolumeState(initialVolume)
+
     settingsRef.current = {
       accent: initialAccent,
       font: initialFont,
       keyboardVisible: initialVisible,
       keyboardLanguage: initialLanguage,
+      keyboardSound: initialSound,
+      keyboardSoundVolume: initialVolume,
     }
 
     setSettingsLoaded(true)
@@ -150,6 +187,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     persist({ keyboardLanguage: lang })
   }
 
+  const setKeyboardSound = (sound: KeyboardSoundId) => {
+    setKeyboardSoundState(sound)
+    persist({ keyboardSound: sound })
+  }
+
+  const setKeyboardSoundVolume = (volume: number) => {
+    setKeyboardSoundVolumeState(volume)
+    persist({ keyboardSoundVolume: volume })
+  }
+
   const fontCssFamily =
     FONT_OPTIONS.find((f) => f.id === font)?.cssFamily ?? "var(--font-mono)"
 
@@ -165,6 +212,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setKeyboardVisible,
         keyboardLanguage,
         setKeyboardLanguage,
+        keyboardSound,
+        setKeyboardSound,
+        keyboardSoundVolume,
+        setKeyboardSoundVolume,
         settingsLoaded,
       }}
     >

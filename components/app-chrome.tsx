@@ -7,6 +7,7 @@ import { Gear, GithubLogo, Info, Note } from "@phosphor-icons/react"
 import { getStrictContext } from "@/lib/get-strict-context"
 import { cn } from "@/lib/utils"
 import { SettingsPanel } from "@/components/settings-panel"
+import { ThemeSwitcher } from "@/components/theme-toggle"
 
 interface AppChromeContextValue {
   settingsOpen: boolean
@@ -78,15 +79,18 @@ function SiteHeader() {
             </button>
           </div>
         </div>
-        <a
-          href="https://github.com/Abhiraj35/TypeWing"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-lg p-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <GithubLogo size={16} aria-hidden />
-          <span className="hidden md:block">Open Source</span>
-        </a>
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher className="h-9 rounded-lg border border-border/70 bg-background px-1 flex items-center justify-center shadow-sm transition-colors hover:border-border hover:bg-muted/50" />
+          <a
+            href="https://github.com/Abhiraj35/TypeWing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground shadow-sm transition-colors hover:border-border hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="GitHub repository"
+          >
+            <GithubLogo size={16} aria-hidden />
+          </a>
+        </div>
       </div>
     </header>
   )

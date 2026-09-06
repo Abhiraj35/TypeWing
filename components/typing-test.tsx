@@ -13,12 +13,14 @@ import {
   type TimeOption,
   type WordOption,
 } from "@/hooks/use-typing-test"
+import { KEYBOARD_SOUND_OPTIONS } from "@/lib/settings-data"
 import { QUOTE_LENGTHS, type QuoteLength } from "@/lib/quotes"
 import type { TestMode } from "@/lib/wpm-count"
 import { cn } from "@/lib/utils"
 
 export function TypingTest() {
-  const { fontCssFamily, keyboardVisible, keyboardLanguage } = useSettings()
+  const { fontCssFamily, keyboardVisible, keyboardLanguage, keyboardSound, keyboardSoundVolume } =
+    useSettings()
 
   const {
     mode,
@@ -114,7 +116,7 @@ export function TypingTest() {
 
             <div
               onClick={handleFocus}
-              className="mt-6 w-full cursor-text select-none"
+              className="relative mt-6 w-full cursor-text select-none"
             >
               <div
                 ref={scrollRef}
@@ -145,11 +147,8 @@ export function TypingTest() {
                   Current word: {words[wordIndex] ?? ""}
                 </span>
 
-                {(() => {
-                  const start = 0
-                  const end = Math.min(words.length, wordIndex + 30)
-                  return words.slice(start, end).map((word, i) => {
-                    const idx = start + i
+                {words.slice(0, Math.min(words.length, wordIndex + 30)).map((word, i) => {
+                    const idx = i
                     const isActive = idx === wordIndex
                     const isPast = idx < wordIndex
                     const displayInput = isActive ? typed : isPast ? wordInputs[idx] ?? "" : ""
@@ -163,8 +162,8 @@ export function TypingTest() {
                         elemRef={isActive ? activeWordRef : undefined}
                       />
                     )
-                  })
-                })()}
+                  })}
+              </div>
 
                 {!isFocused && (
                   <button
@@ -179,7 +178,6 @@ export function TypingTest() {
                     </span>
                   </button>
                 )}
-              </div>
             </div>
 
             <div className="mt-8 flex items-center justify-center gap-3">
@@ -198,6 +196,11 @@ export function TypingTest() {
               <div className="mt-8 flex max-w-full justify-center overflow-x-auto">
                 <Keyboard
                   language={keyboardLanguage}
+                  soundConfigUrl={
+                    KEYBOARD_SOUND_OPTIONS.find((o) => o.id === keyboardSound)?.configUrl ??
+                    null
+                  }
+                  volume={keyboardSoundVolume}
                   className={cn(started && !finished && "opacity-75 transition-opacity duration-300")}
                 />
               </div>

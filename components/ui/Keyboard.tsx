@@ -25,6 +25,7 @@ import {
   SunDim,
 } from "@phosphor-icons/react"
 import { getKeyboardLayout, QWERTY_LAYOUT, type KeyboardLayout } from "@/lib/keyboard-layouts"
+import { KeyboardSoundEngine } from "@/lib/keyboard-sound-engine"
 import { cn } from "@/lib/utils"
 
 export interface KeyboardInteractionEvent {
@@ -37,9 +38,19 @@ export interface KeyboardProps {
   className?: string
   language?: string
   onKeyEvent?: (event: KeyboardInteractionEvent) => void
+  /** Path to a mechvibes config.json, or null/undefined for silent. */
+  soundConfigUrl?: string | null
+  /** Volume 0-100. Defaults to 50. */
+  volume?: number
 }
 
-export function Keyboard({ className, language = "english", onKeyEvent }: KeyboardProps) {
+export function Keyboard({
+  className,
+  language = "english",
+  onKeyEvent,
+  soundConfigUrl,
+  volume = 50,
+}: KeyboardProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const layout = useMemo(() => getKeyboardLayout(language), [language])
 
@@ -48,6 +59,8 @@ export function Keyboard({ className, language = "english", onKeyEvent }: Keyboa
       containerRef={containerRef}
       onKeyEvent={onKeyEvent}
       layout={layout}
+      soundConfigUrl={soundConfigUrl}
+      volume={volume}
     >
       <div
         ref={containerRef}
@@ -105,13 +118,35 @@ interface KeyboardProviderProps {
   containerRef: React.RefObject<HTMLDivElement | null>
   layout: KeyboardLayout
   onKeyEvent?: (event: KeyboardInteractionEvent) => void
+  soundConfigUrl?: string | null
+  volume?: number
 }
 
-function KeyboardProvider({ children, containerRef, layout, onKeyEvent }: KeyboardProviderProps) {
+function KeyboardProvider({
+  children,
+  containerRef,
+  layout,
+  onKeyEvent,
+  soundConfigUrl,
+  volume = 50,
+}: KeyboardProviderProps) {
   const pressedKeysRef = useRef<Set<string>>(new Set())
   const modifiersDownRef = useRef<Set<string>>(new Set())
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set())
   const [isVisible, setIsVisible] = useState(true)
+
+  const soundRef = useRef<KeyboardSoundEngine | null>(null)
+  if (!soundRef.current) {
+    soundRef.current = new KeyboardSoundEngine()
+  }
+  useEffect(() => {
+    void soundRef.current?.load(soundConfigUrl ?? null)
+    return () => soundRef.current?.unload()
+  }, [soundConfigUrl])
+
+  useEffect(() => {
+    soundRef.current?.setVolume(volume)
+  }, [volume])
 
   const emitKeyEvent = useCallback(
     (phase: KeyboardEventPhase, code: string, source: KeyboardEventSource) => {
@@ -130,6 +165,7 @@ function KeyboardProvider({ children, containerRef, layout, onKeyEvent }: Keyboa
         pressedKeysRef.current = next
         setPressedKeys(next)
         emitKeyEvent("down", keyCode, source)
+        soundRef.current?.play(keyCode)
       }
 
       if (source === "pointer") {
