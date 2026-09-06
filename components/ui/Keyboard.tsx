@@ -67,7 +67,7 @@ export function Keyboard({
         inert
         className={cn("inline-block select-none zoom-[0.55] sm:zoom-[0.7] md:zoom-[0.75] lg:zoom-[0.9] xl:zoom-[1.1]", className)}
       >
-        <KeyboardKeys />
+        <KeyboardKeys layout={layout} />
       </div>
     </KeyboardProvider>
   )
@@ -275,10 +275,20 @@ function KeyboardProvider({
     }
   }, [isVisible, pressKey, releaseKey])
 
+  const contextValue = useMemo(
+    () => ({
+      layout,
+      pressedKeys,
+      triggerPointer: () => {},
+      pressKey,
+      releaseKey,
+      releaseAllKeys,
+    }),
+    [layout, pressedKeys, pressKey, releaseKey, releaseAllKeys],
+  )
+
   return (
-    <KeyboardContext.Provider
-      value={{ layout, pressedKeys, triggerPointer: () => {}, pressKey, releaseKey, releaseAllKeys }}
-    >
+    <KeyboardContext.Provider value={contextValue}>
       {children}
     </KeyboardContext.Provider>
   )
@@ -288,9 +298,7 @@ function KeyboardProvider({
 // UI rendering
 // -----------------------------------------------------------------------------
 
-function KeyboardKeys() {
-  const { layout } = useKeyboardContext()
-
+function KeyboardKeys({ layout }: { layout: KeyboardLayout }) {
   function label(keyCode: string): [string, string?] | undefined {
     return layout[keyCode] ?? QWERTY_LAYOUT[keyCode]
   }
