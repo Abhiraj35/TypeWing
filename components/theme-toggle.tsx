@@ -54,7 +54,7 @@ export function ThemeSwitcher({className}: {className?: string}) {
     return (
       <button
         type="button"
-        className="rounded-lg p-1.5 text-muted-foreground"
+        className="flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-muted-foreground"
         aria-label="Theme"
       >
         <Monitor size={16} aria-hidden />
@@ -73,7 +73,7 @@ export function ThemeSwitcher({className}: {className?: string}) {
         aria-haspopup="true"
         aria-label={`Theme: ${theme}`}
         className={cn(
-          "flex items-center gap-1 rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none cursor-pointer",
+          "flex h-10 min-w-10 items-center justify-center gap-1 rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none cursor-pointer",
           open && "text-foreground",
         )}
       >

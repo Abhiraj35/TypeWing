@@ -1,6 +1,7 @@
 "use client"
 
-import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useRef } from "react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { X } from "@phosphor-icons/react"
 import {
   ACCENT_COLORS,
@@ -23,6 +24,8 @@ const PREVIEW_TEXT = {
 } as const
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const reduceMotion = useReducedMotion()
   const {
     accent,
     setAccent,
@@ -61,13 +64,14 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             className="fixed top-0 right-0 z-50 flex h-full w-full flex-col border-l border-border bg-background shadow-2xl sm:w-100"
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+              <h2 id="settings-title" className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                 Settings
-              </span>
+              </h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                ref={closeButtonRef}
+                className="flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground"
                 aria-label="Close settings"
               >
                 <X size={14} />
@@ -87,7 +91,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                       aria-pressed={accent === c.id}
                       title={c.label}
                       className={cn(
-                        "h-7 w-full rounded-sm transition-all duration-150",
+                        "min-h-10 w-full rounded-sm transition-all duration-150",
                         accent === c.id
                           ? "opacity-100 outline -outline-offset-2 outline-ring"
                           : "opacity-40 hover:opacity-80",

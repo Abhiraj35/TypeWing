@@ -23,6 +23,12 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
   return (
     <AppChromeProvider value={{ settingsOpen, setSettingsOpen }}>
+      <a
+        href="#main-content"
+        className="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm text-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        Skip to content
+      </a>
       <SiteHeader />
       {children}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -35,13 +41,13 @@ function SiteHeader() {
   const { setSettingsOpen } = useAppChrome()
 
   const iconButtonClass =
-    "rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    "flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
   return (
-    <header className="flex shrink-0 justify-center border-b border-border px-6 py-3">
+      <header className="site-header flex shrink-0 justify-center px-6 py-4">
       <div className="flex w-full max-w-site items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/" className="font-doto text-4xl font-bold text-primary">
+          <Link href="/" aria-label="TypeWing home" className="font-doto text-4xl font-bold text-primary">
             TypeWing
           </Link>
           <div className="flex items-center gap-0.5">

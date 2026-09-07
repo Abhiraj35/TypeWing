@@ -47,6 +47,7 @@ export function useTypingTest({
   const [timeLeft, setTimeLeft] = useState(30)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [elapsedSec, setElapsedSec] = useState(0)
+  const [rowOffset, setRowOffset] = useState(0)
   const [wpmHistory, setWpmHistory] = useState<WpmSnapshot[]>([])
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -150,6 +151,18 @@ export function useTypingTest({
     quoteLength?: QuoteLength
   }
 
+  // After the active word moves to a new line, translate the words block so the
+  // active line sits on the second visible row (one line of context above it).
+  const syncRowOffset = useCallback(() => {
+    requestAnimationFrame(() => {
+      const word = activeWordRef.current
+      if (!word) return
+      const lineH = word.offsetHeight + 4 // gap-y-1
+      const row = Math.round(word.offsetTop / lineH)
+      setRowOffset(Math.max(0, row - 1) * lineH)
+    })
+  }, [])
+
   const resetTestWith = useCallback(
     (overrides?: ResetOverrides) => {
       const m = overrides?.mode ?? mode
@@ -174,6 +187,7 @@ export function useTypingTest({
       setFinished(false)
       setStartTime(null)
       setWpmHistory([])
+      setRowOffset(0)
       setTimeLeft(to)
       setIsFocused(true)
       startTimeRef.current = null
@@ -343,6 +357,7 @@ export function useTypingTest({
         setWordInputs(nextInputs)
         setWordIndex(nextIndex)
         setTyped("")
+        syncRowOffset()
         return
       }
 
@@ -354,6 +369,7 @@ export function useTypingTest({
           setWordIndex((prev) => prev - 1)
           setTyped(prevInput)
           setWordInputs((prev) => prev.slice(0, -1))
+          syncRowOffset()
         } else if (typed.length > 0) {
           const lastIdx = typed.length - 1
           const isWrong = lastIdx >= currentWord.length || typed[lastIdx] !== currentWord[lastIdx]
@@ -392,7 +408,7 @@ export function useTypingTest({
     },
     [
       finished, started, words, wordIndex, typed, wordInputs, mode,
-      startTest, finishTest, buildResultStats,
+      startTest, finishTest, buildResultStats, syncRowOffset,
     ],
   )
 
@@ -510,6 +526,7 @@ export function useTypingTest({
     onTimeOptionChange,
     onWordOptionChange,
     onQuoteLengthChange,
+    rowOffset,
   } as const
 }
 
