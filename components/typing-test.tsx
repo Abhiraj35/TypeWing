@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { LayoutGroup, motion, useReducedMotion } from "motion/react"
 import { ArrowClockwise, CaretRight, Clock, CursorClick, Quotes, TextAa } from "@phosphor-icons/react"
 import { ResultsScreen } from "@/components/results-screen"
 import { Keyboard } from "@/components/ui/Keyboard"
@@ -19,6 +19,7 @@ import type { TestMode } from "@/lib/wpm-count"
 import { cn } from "@/lib/utils"
 
 export function TypingTest() {
+  const reduceMotion = useReducedMotion()
   const { fontCssFamily, keyboardVisible, keyboardLanguage, keyboardSound, keyboardSoundVolume } =
     useSettings()
 
@@ -51,34 +52,8 @@ export function TypingTest() {
     onTimeOptionChange,
     onWordOptionChange,
     onQuoteLengthChange,
+    rowOffset,
   } = useTypingTest()
-
-  const scrollRef = useRef<HTMLDivElement | null>(null)
-
-  // Keep the active word on screen without constant motion. Instead of
-  // re-centering the whole text block on every keystroke (which made the words
-  // drift up/down), only scroll when the active word leaves the visible box,
-  // and only as far as needed to bring it back - like monkeytype.
-  useEffect(() => {
-    const container = scrollRef.current
-    const active = activeWordRef.current
-    if (!container || !active || finished) return
-
-    const maxScroll = container.scrollHeight - container.clientHeight
-    if (maxScroll <= 0) return
-
-    const rowBottom = active.offsetTop + active.offsetHeight
-    const viewBottom = container.scrollTop + container.clientHeight
-
-    if (rowBottom > viewBottom) {
-      container.scrollTo({
-        top: Math.min(rowBottom - container.clientHeight, maxScroll),
-        behavior: "smooth",
-      })
-    } else if (active.offsetTop < container.scrollTop) {
-      container.scrollTo({ top: active.offsetTop, behavior: "smooth" })
-    }
-  }, [wordIndex, typed, finished, activeWordRef])
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-site flex-col px-6 py-8">
@@ -116,11 +91,10 @@ export function TypingTest() {
 
             <div
               onClick={handleFocus}
-              className="relative mt-6 w-full cursor-text select-none"
+              className="relative mt-7 w-full cursor-text select-none"
             >
               <div
-                ref={scrollRef}
-                className="relative flex flex-wrap gap-x-2.5 gap-y-1 leading-relaxed overflow-hidden"
+                className="relative overflow-hidden"
                 style={{
                   fontFamily: fontCssFamily,
                   fontSize: "1.5rem",
@@ -147,34 +121,53 @@ export function TypingTest() {
                   Current word: {words[wordIndex] ?? ""}
                 </span>
 
-                {words.slice(0, Math.min(words.length, wordIndex + 30)).map((word, i) => {
-                    const idx = i
-                    const isActive = idx === wordIndex
-                    const isPast = idx < wordIndex
-                    const displayInput = isActive ? typed : isPast ? wordInputs[idx] ?? "" : ""
-                    return (
-                      <WordItem
-                        key={`${word}-${idx}`}
-                        word={word}
-                        displayInput={displayInput}
-                        isActive={isActive}
-                        isPast={isPast}
-                        elemRef={isActive ? activeWordRef : undefined}
-                      />
-                    )
-                  })}
+                {rowOffset > 0 && (
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-background to-transparent" />
+                )}
+
+                <LayoutGroup id="words">
+                  <motion.div
+                    className="flex flex-wrap gap-x-2.5 gap-y-1 leading-relaxed"
+                    animate={{
+                      y: -rowOffset,
+                      opacity: !isFocused ? 0.15 : 1,
+                    }}
+                    transition={
+                      reduceMotion
+                        ? { duration: 0 }
+                        : { type: "spring", stiffness: 300, damping: 30, mass: 0.8 }
+                    }
+                  >
+                    {words.slice(0, Math.min(words.length, wordIndex + 30)).map((word, i) => {
+                        const idx = i
+                        const isActive = idx === wordIndex
+                        const isPast = idx < wordIndex
+                        const displayInput = isActive ? typed : isPast ? wordInputs[idx] ?? "" : ""
+                        return (
+                          <WordItem
+                            key={`${word}-${idx}`}
+                            word={word}
+                            displayInput={displayInput}
+                            isActive={isActive}
+                            isPast={isPast}
+                            elemRef={isActive ? activeWordRef : undefined}
+                          />
+                        )
+                      })}
+                  </motion.div>
+                </LayoutGroup>
               </div>
 
                 {!isFocused && (
                   <button
                     type="button"
                     onClick={() => inputRef.current?.focus()}
-                    className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center bg-background/60 backdrop-blur-sm"
-                    aria-label="Click to start"
+                    className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded-2xl bg-background/72 backdrop-blur-sm"
+                    aria-label="Click to begin typing"
                   >
                     <span className="flex items-center gap-2 text-sm font-medium text-primary">
                       <CursorClick size={16} aria-hidden />
-                      Click to start
+                      Click to begin typing
                     </span>
                   </button>
                 )}
@@ -346,14 +339,15 @@ function ModeSelector({
                 ))}
         </div>
 
-        <button
+        <motion.button
           type="button"
           onClick={onRestart}
-          className="rounded-lg border border-border p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+          whileTap={{ scale: 0.96 }}
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border p-1.5 text-muted-foreground transition-[background-color,color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground"
           aria-label="Restart"
         >
           <CaretRight size={14} aria-hidden />
-        </button>
+        </motion.button>
       </div>
 
       {mode === "quotes" && quoteAuthor && (
@@ -383,7 +377,7 @@ function TestMeta({
   return (
     <div className="flex items-center justify-between text-sm tabular-nums text-muted-foreground">
       <span className="w-24" />
-      <span className="text-sm font-mono">
+      <span className="text-sm font-mono" aria-label={mode === "time" ? `Time remaining: ${timeLeft} seconds` : undefined}>
         {mode === "time" ? timeLeft : ""}
       </span>
       <div className="flex w-24 items-center justify-end gap-3">

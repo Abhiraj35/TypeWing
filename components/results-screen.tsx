@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, type ReactNode } from "react"
-import { motion } from "motion/react"
+import { motion, useReducedMotion } from "motion/react"
 import {
   ArrowClockwise,
   CaretRight,
@@ -229,6 +229,7 @@ function Stat({
 // ---- ResultsScreen ----------------------------------------------------------
 
 export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) {
+  const reduceMotion = useReducedMotion()
   const invalid = isInvalidTestResult(stats)
   const { mode, modeDetail } = stats
 
@@ -260,9 +261,9 @@ export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) 
   if (invalid) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
+        transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeOut" }}
         className="flex w-full flex-col items-center gap-4 px-2 text-center"
       >
         <p className="font-mono text-3xl font-bold text-muted-foreground">
@@ -280,9 +281,9 @@ export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeOut" }}
       className="w-full max-w-2xl"
     >
       <div className="flex flex-col items-center gap-3 px-2 text-center">
@@ -309,9 +310,9 @@ export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) 
 
         {pb?.isNewPb && (
           <motion.p
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15 }}
+            transition={{ delay: reduceMotion ? 0 : 0.15 }}
             className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
           >
             <Target size={13} weight="fill" aria-hidden />
@@ -341,7 +342,7 @@ function ShortcutButtons({
       <button
         type="button"
         onClick={onNext}
-        className="flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex min-h-10 items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <CaretRight size={14} aria-hidden />
         Next test
@@ -352,7 +353,7 @@ function ShortcutButtons({
       <button
         type="button"
         onClick={onRestart}
-        className="flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex min-h-10 items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <ArrowClockwise size={14} aria-hidden />
         Restart

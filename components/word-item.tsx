@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, type RefObject } from "react"
-import { motion } from "motion/react"
+import { motion, useReducedMotion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 export interface WordItemProps {
@@ -20,7 +20,11 @@ export const WordItem = memo(function WordItem({
   isPast,
   elemRef,
 }: WordItemProps) {
+  const reduceMotion = useReducedMotion()
   const cursorAtEnd = isActive && displayInput.length >= word.length
+  const cursorTransition = reduceMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 700, damping: 38, mass: 0.6 }
 
   return (
     <div ref={isActive ? elemRef : undefined} className="relative whitespace-nowrap">
@@ -45,14 +49,14 @@ export const WordItem = memo(function WordItem({
               <motion.span
                 layoutId="cursor-active"
                 className="typing-cursor absolute top-0.5 -left-px h-[1.2em] w-0.5 rounded-full bg-primary"
-                transition={{ type: "spring", stiffness: 700, damping: 38, mass: 0.6 }}
+                transition={cursorTransition}
               />
             )}
             {isActive && isLastChar && cursorAtEnd && !(displayInput.length > word.length) && (
               <motion.span
                 layoutId="cursor-active"
                 className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-0.5 rounded-full bg-primary"
-                transition={{ type: "spring", stiffness: 700, damping: 38, mass: 0.6 }}
+                transition={cursorTransition}
               />
             )}
             <span className={cn("transition-colors duration-60", color)}>{char}</span>
@@ -68,7 +72,7 @@ export const WordItem = memo(function WordItem({
               <motion.span
                 layoutId="cursor-active"
                 className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-0.5 rounded-full bg-primary"
-                transition={{ type: "spring", stiffness: 700, damping: 38, mass: 0.6 }}
+                transition={cursorTransition}
               />
             )}
             {extra}
