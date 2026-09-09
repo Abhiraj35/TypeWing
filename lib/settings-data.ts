@@ -51,6 +51,8 @@ export interface FontOption {
 
 export type KeyboardLanguage = "english" | "french" | "german"
 
+export type KeyboardStyle = "sculpted" | "mac"
+
 export type KeyboardSoundId = "off" | "cherrymx-blue-abs" | "cherrymx-blue-pbt" | "cherrymx-red-pbt" | "gateron-browns-revolt"
 
 export interface KeyboardSoundOption {
@@ -63,6 +65,7 @@ export interface Settings {
   accent: AccentColor
   font: TypingFont
   keyboardVisible: boolean
+  keyboardStyle: KeyboardStyle
   keyboardLanguage: KeyboardLanguage
   keyboardSound: KeyboardSoundId
   keyboardSoundVolume: number
@@ -112,6 +115,7 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: "teal",
   font: "geist-mono",
   keyboardVisible: true,
+  keyboardStyle: "sculpted",
   keyboardLanguage: "english",
   keyboardSound: "cherrymx-blue-pbt",
   keyboardSoundVolume: 50,
@@ -129,4 +133,9 @@ export const KEYBOARD_LANGUAGE_OPTIONS: { id: KeyboardLanguage; label: string }[
   { id: "english", label: "English" },
   { id: "french", label: "French" },
   { id: "german", label: "German" },
+]
+
+export const KEYBOARD_STYLE_OPTIONS: { id: KeyboardStyle; label: string; description: string }[] = [
+  { id: "sculpted", label: "Sculpted", description: "Tall 3D keycaps" },
+  { id: "mac", label: "Mac", description: "Flat laptop keys" },
 ]
