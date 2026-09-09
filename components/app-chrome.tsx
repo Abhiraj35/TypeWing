@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Gear, GithubLogo, Info, Note } from "@phosphor-icons/react"
+import { Gear, Info } from "@phosphor-icons/react"
 import { getStrictContext } from "@/lib/get-strict-context"
 import { cn } from "@/lib/utils"
 import { SettingsPanel } from "@/components/settings-panel"
@@ -41,62 +41,44 @@ function SiteHeader() {
   const { setSettingsOpen } = useAppChrome()
 
   const iconButtonClass =
-    "flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 
   return (
-      <header className="site-header flex shrink-0 justify-center px-6 py-4">
+    <header className="flex shrink-0 justify-center px-6 py-4 shadow-[0_1px_0_var(--color-border)]">
       <div className="flex w-full max-w-site items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" aria-label="TypeWing home" className="font-doto text-4xl font-bold text-primary">
-            TypeWing
-          </Link>
-          <div className="flex items-center gap-0.5">
-            <Link
-              href="/about"
-              prefetch
-              className={cn(
-                iconButtonClass,
-                pathname === "/about" && "text-foreground",
-              )}
-              aria-current={pathname === "/about" ? "page" : undefined}
-              aria-label="About TypeWing"
-            >
-              <Info size={16} aria-hidden />
-            </Link>
-            <Link
-              href="/changelog"
-              prefetch
-              className={cn(
-                iconButtonClass,
-                pathname === "/changelog" && "text-foreground",
-              )}
-              aria-current={pathname === "/changelog" ? "page" : undefined}
-              aria-label="Changelog"
-            >
-              <Note size={16} aria-hidden />
-            </Link>
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className={cn(iconButtonClass, "cursor-pointer")}
-              aria-label="Settings"
-            >
-              <Gear size={16} aria-hidden />
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeSwitcher className="h-9 rounded-lg border border-border/70 bg-background px-1 flex items-center justify-center shadow-sm transition-colors hover:border-border hover:bg-muted/50" />
-          <a
-            href="https://github.com/Abhiraj35/TypeWing"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground shadow-sm transition-colors hover:border-border hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="GitHub repository"
+        <Link
+          href="/"
+          aria-label="TypeWing home"
+          className="text-2xl sm:text-3xl font-bold tracking-tight text-primary transition-opacity hover:opacity-90"
+        >
+          TypeWing
+        </Link>
+
+        <nav aria-label="Site navigation" className="flex items-center gap-1 sm:gap-1.5">
+          <ThemeSwitcher className="mr-1 flex h-9 items-center justify-center rounded-lg border border-border/70 bg-background px-1 shadow-xs transition-colors hover:border-border hover:bg-muted/50" />
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className={cn(iconButtonClass, "cursor-pointer")}
+            aria-label="Settings"
+            title="Settings"
           >
-            <GithubLogo size={16} aria-hidden />
-          </a>
-        </div>
+            <Gear size={17} aria-hidden />
+          </button>
+          <Link
+            href="/about"
+            prefetch
+            className={cn(
+              iconButtonClass,
+              pathname === "/about" && "bg-muted text-foreground",
+            )}
+            aria-current={pathname === "/about" ? "page" : undefined}
+            aria-label="About TypeWing"
+            title="About TypeWing"
+          >
+            <Info size={17} aria-hidden />
+          </Link>
+        </nav>
       </div>
     </header>
   )

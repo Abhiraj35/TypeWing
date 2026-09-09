@@ -1,4 +1,4 @@
-import { Doto, Geist_Mono, Space_Grotesk } from "next/font/google"
+import { Geist_Mono, Outfit } from "next/font/google"
 import type { Metadata } from "next"
 import "./globals.css"
 import { AppChrome } from "@/components/app-chrome"
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
 export const instant = false;
 
-const spaceGrotesk = Space_Grotesk({
+const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-sans",
 })
@@ -19,11 +19,6 @@ const spaceGrotesk = Space_Grotesk({
 const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-})
-
-const doto = Doto({
-  subsets: ["latin"],
-  variable: "--font-doto",
 })
 
 export const metadata: Metadata = {
@@ -42,9 +37,8 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(
         "antialiased font-sans",
-        spaceGrotesk.variable,
+        outfit.variable,
         fontMono.variable,
-        doto.variable,
       )}
     >
       <body suppressHydrationWarning>

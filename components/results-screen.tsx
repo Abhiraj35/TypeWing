@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import {
   ArrowClockwise,
@@ -95,7 +95,7 @@ function WpmChart({ history }: { history: WpmSnapshot[] }) {
   }
 
   return (
-    <div className="h-56 w-full">
+    <div className="h-64 sm:h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid
@@ -187,45 +187,6 @@ function ChartHoverCard({
   )
 }
 
-// ---- Stat tile --------------------------------------------------------------
-
-function Stat({
-  label,
-  value,
-  suffix = "",
-  highlight = false,
-  hint,
-}: {
-  label: string
-  value: number | string
-  suffix?: string
-  highlight?: boolean
-  hint?: ReactNode
-}) {
-  const numeric = typeof value === "number"
-  return (
-    <div className="flex flex-col items-center text-center">
-      <p
-        className={cn(
-          "flex items-baseline gap-0.5 text-3xl font-semibold",
-          highlight ? "text-primary" : "text-foreground",
-        )}
-      >
-        {numeric ? <AnimatedNumber value={value as number} /> : value}
-        {suffix && (
-          <span className="text-lg font-medium text-muted-foreground">{suffix}</span>
-        )}
-      </p>
-      <p className="mt-1 text-[11px] tracking-widest text-muted-foreground uppercase">
-        {label}
-      </p>
-      {hint && (
-        <p className="mt-0.5 text-xs text-muted-foreground/70">{hint}</p>
-      )}
-    </div>
-  )
-}
-
 // ---- ResultsScreen ----------------------------------------------------------
 
 export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) {
@@ -274,7 +235,26 @@ export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) 
           usually happens if the timer ran out before you typed, focus was lost,
           or the test ended right after it started.
         </p>
-        <ShortcutButtons onRestart={onRestart} onNext={onNext} />
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={onNext}
+            className="flex min-h-10 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 cursor-pointer"
+          >
+            <CaretRight size={14} aria-hidden />
+            Next test
+            <kbd className="ml-1 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px]">Enter</kbd>
+          </button>
+          <button
+            type="button"
+            onClick={onRestart}
+            className="flex min-h-10 items-center gap-2 rounded-xl border border-border/80 bg-background px-5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+          >
+            <ArrowClockwise size={14} aria-hidden />
+            Restart
+            <kbd className="ml-1 rounded border border-border px-1.5 py-0.5 text-[10px]">⌘↵</kbd>
+          </button>
+        </div>
       </motion.div>
     )
   }
@@ -284,83 +264,93 @@ export function ResultsScreen({ stats, onRestart, onNext }: ResultsScreenProps) 
       initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeOut" }}
-      className="w-full max-w-2xl"
+      className="w-full max-w-4xl"
     >
-      <div className="flex flex-col items-center gap-3 px-2 text-center">
-        <p className="text-xs tracking-widest text-muted-foreground uppercase">
-          {mode} {modeDetail}
-          {language ? ` · ${language}` : ""}
-        </p>
-        {stats.author && (
-          <p className="-mt-1 text-sm text-muted-foreground">— {stats.author}</p>
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 sm:gap-8 items-start">
+        {/* Left Column: Stats & Actions */}
+        <div className="flex flex-col gap-5 text-left">
+          <div>
+            <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+              {mode} {modeDetail}
+              {language ? ` · ${language}` : ""}
+            </p>
+            {stats.author && (
+              <p className="mt-0.5 text-xs text-muted-foreground italic">— {stats.author}</p>
+            )}
 
-        <div className="flex items-center gap-2">
-          <span className="text-5xl font-bold tabular-nums text-primary">
-            <AnimatedNumber value={stats.wpm} />
-          </span>
-          <span className="mb-1 text-xl font-medium text-muted-foreground">wpm</span>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-5xl sm:text-6xl font-bold tracking-tight tabular-nums text-primary">
+                <AnimatedNumber value={stats.wpm} />
+              </span>
+              <span className="text-lg font-medium text-muted-foreground">wpm</span>
+            </div>
+
+            {pb?.isNewPb && (
+              <motion.p
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: reduceMotion ? 0 : 0.15 }}
+                className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-primary"
+              >
+                <Target size={14} weight="fill" aria-hidden />
+                New personal best
+              </motion.p>
+            )}
+          </div>
+
+          {/* Left-aligned data readouts */}
+          <div className="flex flex-col divide-y divide-border/60 rounded-xl border border-border/70 bg-card/40 px-4 py-1">
+            <div className="flex items-center justify-between py-2 text-sm">
+              <span className="text-muted-foreground">Accuracy</span>
+              <span className="font-semibold tabular-nums text-foreground">{stats.accuracy}%</span>
+            </div>
+            <div className="flex items-center justify-between py-2 text-sm">
+              <span className="text-muted-foreground">Raw speed</span>
+              <span className="font-semibold tabular-nums text-foreground">{stats.raw} wpm</span>
+            </div>
+            <div className="flex items-center justify-between py-2 text-sm">
+              <span className="text-muted-foreground">Consistency</span>
+              <span className="font-semibold tabular-nums text-foreground">{stats.consistency}%</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onNext}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-opacity hover:opacity-90 cursor-pointer"
+            >
+              <CaretRight size={14} aria-hidden />
+              Next test
+              <kbd className="rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px]">
+                Enter
+              </kbd>
+            </button>
+            <button
+              type="button"
+              onClick={onRestart}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border/80 bg-background px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground cursor-pointer"
+            >
+              <ArrowClockwise size={14} aria-hidden />
+              Restart
+              <kbd className="rounded border border-border px-1.5 py-0.5 text-[10px]">
+                ⌘↵
+              </kbd>
+            </button>
+          </div>
         </div>
 
-        <div className="grid w-full grid-cols-3 gap-4">
-          <Stat label="acc" value={stats.accuracy} suffix="%" />
-          <Stat label="raw" value={stats.raw} />
-          <Stat label="consistency" value={stats.consistency} suffix="%" />
-        </div>
-
-        {pb?.isNewPb && (
-          <motion.p
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: reduceMotion ? 0 : 0.15 }}
-            className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-          >
-            <Target size={13} weight="fill" aria-hidden />
-            new personal best
-          </motion.p>
-        )}
-
-        <div className="mt-2 w-full">
+        {/* Right Column: Chart in Card */}
+        <div className="rounded-2xl border border-border/70 bg-card/40 p-5 sm:p-6 shadow-xs backdrop-blur-xs">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              WPM Progression
+            </span>
+          </div>
           <WpmChart history={stats.wpmHistory} />
         </div>
-
-        <ShortcutButtons onRestart={onRestart} onNext={onNext} />
       </div>
     </motion.div>
-  )
-}
-
-function ShortcutButtons({
-  onRestart,
-  onNext,
-}: {
-  onRestart: () => void
-  onNext: () => void
-}) {
-  return (
-    <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-      <button
-        type="button"
-        onClick={onNext}
-        className="flex min-h-10 items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <CaretRight size={14} aria-hidden />
-        Next test
-        <kbd className="ml-1 rounded border border-border px-1.5 py-0.5 text-[10px]">
-          Enter
-        </kbd>
-      </button>
-      <button
-        type="button"
-        onClick={onRestart}
-        className="flex min-h-10 items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <ArrowClockwise size={14} aria-hidden />
-        Restart
-        <kbd className="ml-1 rounded border border-border px-1.5 py-0.5 text-[10px]">
-          ⌘↵
-        </kbd>
-      </button>
-    </div>
   )
 }
