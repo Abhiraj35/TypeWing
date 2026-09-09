@@ -8,6 +8,7 @@ import {
   type AccentColor,
   type KeyboardLanguage,
   type KeyboardSoundId,
+  type KeyboardStyle,
   type Settings,
   type TypingFont,
 } from "@/lib/settings-data"
@@ -16,6 +17,7 @@ export type {
   AccentColor,
   KeyboardLanguage,
   KeyboardSoundId,
+  KeyboardStyle,
   Settings,
   TypingFont,
 } from "@/lib/settings-data"
@@ -24,6 +26,7 @@ export {
   FONT_OPTIONS,
   KEYBOARD_LANGUAGE_OPTIONS,
   KEYBOARD_SOUND_OPTIONS,
+  KEYBOARD_STYLE_OPTIONS,
 } from "@/lib/settings-data"
 
 interface SettingsContextValue {
@@ -34,6 +37,8 @@ interface SettingsContextValue {
   fontCssFamily: string
   keyboardVisible: boolean
   setKeyboardVisible: (visible: boolean) => void
+  keyboardStyle: KeyboardStyle
+  setKeyboardStyle: (style: KeyboardStyle) => void
   keyboardLanguage: KeyboardLanguage
   setKeyboardLanguage: (lang: KeyboardLanguage) => void
   keyboardSound: KeyboardSoundId
@@ -73,6 +78,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [keyboardVisible, setKeyboardVisibleState] = useState<boolean>(
     DEFAULT_SETTINGS.keyboardVisible,
   )
+  const [keyboardStyle, setKeyboardStyleState] = useState<KeyboardStyle>(
+    DEFAULT_SETTINGS.keyboardStyle,
+  )
   const [keyboardLanguage, setKeyboardLanguageState] = useState<KeyboardLanguage>(
     DEFAULT_SETTINGS.keyboardLanguage,
   )
@@ -88,6 +96,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     accent: DEFAULT_SETTINGS.accent,
     font: DEFAULT_SETTINGS.font,
     keyboardVisible: DEFAULT_SETTINGS.keyboardVisible,
+    keyboardStyle: DEFAULT_SETTINGS.keyboardStyle,
     keyboardLanguage: DEFAULT_SETTINGS.keyboardLanguage,
     keyboardSound: DEFAULT_SETTINGS.keyboardSound,
     keyboardSoundVolume: DEFAULT_SETTINGS.keyboardSoundVolume,
@@ -125,6 +134,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         : DEFAULT_SETTINGS.keyboardVisible
     setKeyboardVisibleState(initialVisible)
 
+    const initialStyle: KeyboardStyle =
+      saved.keyboardStyle === "mac" || saved.keyboardStyle === "sculpted"
+        ? saved.keyboardStyle
+        : DEFAULT_SETTINGS.keyboardStyle
+    setKeyboardStyleState(initialStyle)
+
     const initialLanguage = (
       saved.keyboardLanguage === "french" ||
       saved.keyboardLanguage === "german" ||
@@ -157,6 +172,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       accent: initialAccent,
       font: initialFont,
       keyboardVisible: initialVisible,
+      keyboardStyle: initialStyle,
       keyboardLanguage: initialLanguage,
       keyboardSound: initialSound,
       keyboardSoundVolume: initialVolume,
@@ -180,6 +196,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setKeyboardVisible = (visible: boolean) => {
     setKeyboardVisibleState(visible)
     persist({ keyboardVisible: visible })
+  }
+
+  const setKeyboardStyle = (style: KeyboardStyle) => {
+    setKeyboardStyleState(style)
+    persist({ keyboardStyle: style })
   }
 
   const setKeyboardLanguage = (lang: KeyboardLanguage) => {
@@ -210,6 +231,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         fontCssFamily,
         keyboardVisible,
         setKeyboardVisible,
+        keyboardStyle,
+        setKeyboardStyle,
         keyboardLanguage,
         setKeyboardLanguage,
         keyboardSound,

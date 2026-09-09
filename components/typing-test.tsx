@@ -4,6 +4,7 @@ import { LayoutGroup, motion, useReducedMotion } from "motion/react"
 import { ArrowClockwise, CaretRight, Clock, CursorClick, Quotes, TextAa } from "@phosphor-icons/react"
 import { ResultsScreen } from "@/components/results-screen"
 import { Keyboard } from "@/components/ui/Keyboard"
+import { MacKeyboard } from "@/components/ui/mac-keyboard"
 import { WordItem } from "@/components/word-item"
 import { useSettings } from "@/components/settings-context"
 import {
@@ -20,8 +21,14 @@ import { cn } from "@/lib/utils"
 
 export function TypingTest() {
   const reduceMotion = useReducedMotion()
-  const { fontCssFamily, keyboardVisible, keyboardLanguage, keyboardSound, keyboardSoundVolume } =
-    useSettings()
+  const {
+    fontCssFamily,
+    keyboardVisible,
+    keyboardStyle,
+    keyboardLanguage,
+    keyboardSound,
+    keyboardSoundVolume,
+  } = useSettings()
 
   const {
     mode,
@@ -54,6 +61,14 @@ export function TypingTest() {
     onQuoteLengthChange,
     rowOffset,
   } = useTypingTest()
+
+  const keyboardProps = {
+    language: keyboardLanguage,
+    soundConfigUrl:
+      KEYBOARD_SOUND_OPTIONS.find((o) => o.id === keyboardSound)?.configUrl ?? null,
+    volume: keyboardSoundVolume,
+    className: cn(started && !finished && "opacity-75 transition-opacity duration-300"),
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-site flex-col px-6 py-8">
@@ -122,7 +137,7 @@ export function TypingTest() {
                 </span>
 
                 {rowOffset > 0 && (
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-background to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-linear-to-b from-background to-transparent" />
                 )}
 
                 <LayoutGroup id="words">
@@ -187,15 +202,11 @@ export function TypingTest() {
 
             {keyboardVisible && (
               <div className="mt-8 flex max-w-full justify-center overflow-x-auto">
-                <Keyboard
-                  language={keyboardLanguage}
-                  soundConfigUrl={
-                    KEYBOARD_SOUND_OPTIONS.find((o) => o.id === keyboardSound)?.configUrl ??
-                    null
-                  }
-                  volume={keyboardSoundVolume}
-                  className={cn(started && !finished && "opacity-75 transition-opacity duration-300")}
-                />
+                {keyboardStyle === "mac" ? (
+                  <MacKeyboard {...keyboardProps} />
+                ) : (
+                  <Keyboard {...keyboardProps} />
+                )}
               </div>
             )}
           </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { createContext, useContext, useMemo, useRef } from "react"
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react"
 import {
   ArrowLineLeft,
@@ -24,15 +24,15 @@ import {
   Sun,
   SunDim,
 } from "@phosphor-icons/react"
+import {
+  useKeyboardInteraction,
+  type KeyboardEventSource,
+  type KeyboardInteractionEvent,
+} from "@/hooks/use-keyboard-interaction"
 import { getKeyboardLayout, QWERTY_LAYOUT, type KeyboardLayout } from "@/lib/keyboard-layouts"
-import { KeyboardSoundEngine } from "@/lib/keyboard-sound-engine"
 import { cn } from "@/lib/utils"
 
-export interface KeyboardInteractionEvent {
-  code: string
-  phase: "down" | "up"
-  source: "physical" | "pointer"
-}
+export type { KeyboardInteractionEvent }
 
 export interface KeyboardProps {
   className?: string
@@ -64,7 +64,6 @@ export function Keyboard({
     >
       <div
         ref={containerRef}
-        inert
         className={cn("inline-block select-none zoom-[0.55] sm:zoom-[0.7] md:zoom-[0.75] lg:zoom-[0.9] xl:zoom-[1.1]", className)}
       >
         <KeyboardKeys layout={layout} />
@@ -88,22 +87,7 @@ interface KeyboardContextType {
   releaseAllKeys: (source?: KeyboardEventSource) => void
 }
 
-type KeyboardEventSource = "physical" | "pointer"
-
 const KeyboardContext = createContext<KeyboardContextType | null>(null)
-
-// OS/browsers often skip keyup for the letter key after Meta/Cmd chords; we track
-// modifiers to clear orphaned keys (mirrors the reference).
-const PHYSICAL_MODIFIER_CODES = new Set<string>([
-  "AltLeft",
-  "AltRight",
-  "ControlLeft",
-  "ControlRight",
-  "MetaLeft",
-  "MetaRight",
-  "ShiftLeft",
-  "ShiftRight",
-])
 
 function useKeyboardContext() {
   const context = useContext(KeyboardContext)
@@ -130,150 +114,12 @@ function KeyboardProvider({
   soundConfigUrl,
   volume = 50,
 }: KeyboardProviderProps) {
-  const pressedKeysRef = useRef<Set<string>>(new Set())
-  const modifiersDownRef = useRef<Set<string>>(new Set())
-  const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set())
-  const [isVisible, setIsVisible] = useState(true)
-
-  const soundRef = useRef<KeyboardSoundEngine | null>(null)
-  if (!soundRef.current) {
-    soundRef.current = new KeyboardSoundEngine()
-  }
-  useEffect(() => {
-    void soundRef.current?.load(soundConfigUrl ?? null)
-    return () => soundRef.current?.unload()
-  }, [soundConfigUrl])
-
-  useEffect(() => {
-    soundRef.current?.setVolume(volume)
-  }, [volume])
-
-  const emitKeyEvent = useCallback(
-    (phase: KeyboardEventPhase, code: string, source: KeyboardEventSource) => {
-      onKeyEvent?.({ code, phase, source })
-    },
-    [onKeyEvent],
-  )
-
-  const pressKey = useCallback(
-    (keyCode: string, source: KeyboardEventSource): boolean => {
-      if (pressedKeysRef.current.has(keyCode)) return false
-
-      const apply = () => {
-        const next = new Set(pressedKeysRef.current)
-        next.add(keyCode)
-        pressedKeysRef.current = next
-        setPressedKeys(next)
-        emitKeyEvent("down", keyCode, source)
-        soundRef.current?.play(keyCode)
-      }
-
-      if (source === "pointer") {
-        apply()
-      } else {
-        apply()
-      }
-      return true
-    },
-    [emitKeyEvent],
-  )
-
-  const releaseKey = useCallback(
-    (keyCode: string, source: KeyboardEventSource) => {
-      if (!pressedKeysRef.current.has(keyCode)) return
-
-      const apply = () => {
-        const next = new Set(pressedKeysRef.current)
-        next.delete(keyCode)
-        pressedKeysRef.current = next
-        setPressedKeys(next)
-        emitKeyEvent("up", keyCode, source)
-      }
-
-      apply()
-    },
-    [emitKeyEvent],
-  )
-
-  const releaseAllKeys = useCallback((source: KeyboardEventSource = "physical") => {
-    const keysToRelease = Array.from(pressedKeysRef.current)
-    if (keysToRelease.length === 0) return
-
-    pressedKeysRef.current = new Set()
-    modifiersDownRef.current = new Set()
-    setPressedKeys(new Set())
-
-    for (const keyCode of keysToRelease) {
-      emitKeyEvent("up", keyCode, source)
-    }
-  }, [emitKeyEvent])
-
-  // Release all pressed keys on blur / tab hidden, to avoid sticking highlights.
-  useEffect(() => {
-    const handleBlur = () => releaseAllKeys()
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") releaseAllKeys()
-    }
-    window.addEventListener("blur", handleBlur)
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-    return () => {
-      window.removeEventListener("blur", handleBlur)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [releaseAllKeys])
-
-  // Stop tracking physical keys once the keyboard is scrolled out of view.
-  useEffect(() => {
-    const element = containerRef.current
-    if (!element || typeof IntersectionObserver === "undefined") return
-
-    const observer = new IntersectionObserver(([entry]) => {
-      setIsVisible(entry.isIntersecting)
-    }, { threshold: 0.1 })
-
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [containerRef])
-
-  // Listen to physical key presses so on-screen keys light up as the user types.
-  useEffect(() => {
-    if (!isVisible) {
-      releaseAllKeys()
-      return
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (PHYSICAL_MODIFIER_CODES.has(event.code)) {
-        modifiersDownRef.current.add(event.code)
-      }
-      if (event.repeat) return
-      pressKey(event.code, "physical")
-    }
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      const code = event.code
-      releaseKey(code, "physical")
-
-      if (!PHYSICAL_MODIFIER_CODES.has(code)) return
-
-      const hadTracked = modifiersDownRef.current.delete(code)
-      if (!hadTracked || modifiersDownRef.current.size > 0) return
-
-      for (const stuckCode of Array.from(pressedKeysRef.current)) {
-        if (!PHYSICAL_MODIFIER_CODES.has(stuckCode)) {
-          releaseKey(stuckCode, "physical")
-        }
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown)
-    document.addEventListener("keyup", handleKeyUp)
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-      document.removeEventListener("keyup", handleKeyUp)
-    }
-  }, [isVisible, pressKey, releaseKey])
+  const { pressedKeys, pressKey, releaseKey, releaseAllKeys } = useKeyboardInteraction({
+    containerRef,
+    onKeyEvent,
+    soundConfigUrl,
+    volume,
+  })
 
   const contextValue = useMemo(
     () => ({
@@ -413,8 +259,6 @@ function KeyboardKeys({ layout }: { layout: KeyboardLayout }) {
     </div>
   )
 }
-
-type KeyboardEventPhase = "down" | "up"
 
 function Row({ children }: { children: ReactNode }) {
   return <div className="flex">{children}</div>

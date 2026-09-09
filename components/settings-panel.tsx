@@ -8,6 +8,7 @@ import {
   FONT_OPTIONS,
   KEYBOARD_LANGUAGE_OPTIONS,
   KEYBOARD_SOUND_OPTIONS,
+  KEYBOARD_STYLE_OPTIONS,
   useSettings,
 } from "@/components/settings-context"
 import { cn } from "@/lib/utils"
@@ -34,6 +35,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     fontCssFamily,
     keyboardVisible,
     setKeyboardVisible,
+    keyboardStyle,
+    setKeyboardStyle,
     keyboardLanguage,
     setKeyboardLanguage,
     keyboardSound,
@@ -166,6 +169,31 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     />
                   </span>
                 </button>
+                <div className="mt-3 grid grid-cols-2 gap-1.5">
+                  {KEYBOARD_STYLE_OPTIONS.map((option) => {
+                    const selected = keyboardStyle === option.id
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setKeyboardStyle(option.id)}
+                        aria-pressed={selected}
+                        className={cn(
+                          "cursor-pointer rounded-lg border px-3 py-2 text-left transition-colors outline-none",
+                          "hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                          selected
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-input bg-background text-muted-foreground",
+                        )}
+                      >
+                        <span className="block text-sm font-medium">{option.label}</span>
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                          {option.description}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </section>
 
               {/* Keyboard language */}
