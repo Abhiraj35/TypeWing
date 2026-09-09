@@ -80,7 +80,6 @@ export function MacKeyboard({
     <MacKeyboardContext.Provider value={contextValue}>
       <div
         ref={containerRef}
-        inert
         className={cn(
           "inline-block w-fit select-none zoom-[0.9] sm:zoom-[1.15] md:zoom-[1.35] lg:zoom-[1.55] xl:zoom-[1.75]",
           className,

@@ -64,7 +64,6 @@ export function Keyboard({
     >
       <div
         ref={containerRef}
-        inert
         className={cn("inline-block select-none zoom-[0.55] sm:zoom-[0.7] md:zoom-[0.75] lg:zoom-[0.9] xl:zoom-[1.1]", className)}
       >
         <KeyboardKeys layout={layout} />
