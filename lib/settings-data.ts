@@ -29,6 +29,7 @@ export type TypingFont =
   | "space-mono"
   | "roboto-mono"
   | "source-code-pro"
+  | "outfit"
   | "space-grotesk"
   | "inter"
   | "poppins"
@@ -102,6 +103,7 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: "roboto-mono",     label: "Roboto Mono",     googleFamily: "Roboto+Mono:wght@400;500;700",     cssFamily: "'Roboto Mono'",      tag: "mono" },
   { id: "source-code-pro", label: "Source Code Pro", googleFamily: "Source+Code+Pro:wght@400;500;700", cssFamily: "'Source Code Pro'",   tag: "mono" },
   // Display / Sans
+  { id: "outfit",          label: "Outfit",          googleFamily: "Outfit:wght@400;500;700",          cssFamily: "'Outfit', sans-serif", tag: "display" },
   { id: "space-grotesk",   label: "Space Grotesk",   googleFamily: "Space+Grotesk:wght@400;500;700",   cssFamily: "'Space Grotesk'",     tag: "display" },
   { id: "inter",           label: "Inter",           googleFamily: "Inter:wght@400;500;700",           cssFamily: "'Inter'",             tag: "display" },
   { id: "poppins",         label: "Poppins",         googleFamily: "Poppins:wght@400;500;700",         cssFamily: "'Poppins'",           tag: "display" },
@@ -112,7 +114,7 @@ export const FONT_OPTIONS: FontOption[] = [
 ]
 
 export const DEFAULT_SETTINGS: Settings = {
-  accent: "teal",
+  accent: "indigo",
   font: "geist-mono",
   keyboardVisible: true,
   keyboardStyle: "sculpted",

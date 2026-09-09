@@ -81,7 +81,7 @@ export function MacKeyboard({
       <div
         ref={containerRef}
         className={cn(
-          "inline-block w-fit select-none zoom-[0.9] sm:zoom-[1.15] md:zoom-[1.35] lg:zoom-[1.55] xl:zoom-[1.75]",
+          "inline-block w-fit select-none zoom-[1] sm:zoom-[1.2] md:zoom-[1.5] lg:zoom-[1.75] xl:zoom-[2.0]",
           className,
         )}
       >
@@ -99,7 +99,7 @@ function MacKeypad() {
   }
 
   return (
-    <div className="h-full w-fit rounded-xl bg-neutral-200 p-1 shadow-sm ring-1 shadow-black/5 ring-black/5 dark:bg-neutral-900 dark:shadow-black/40 dark:ring-white/10">
+    <div className="h-full w-fit rounded-2xl bg-neutral-200/90 p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-neutral-900/90 dark:ring-white/10 dark:shadow-2xl">
       <Row>
         <Key
           keyCode="Escape"

@@ -48,14 +48,14 @@ export const WordItem = memo(function WordItem({
             {isActive && !cursorAtEnd && cIdx === displayInput.length && (
               <motion.span
                 layoutId="cursor-active"
-                className="typing-cursor absolute top-0.5 -left-px h-[1.2em] w-0.5 rounded-full bg-primary"
+                className="typing-cursor absolute top-0.5 -left-px h-[1.2em] w-[3px] rounded-xs bg-primary"
                 transition={cursorTransition}
               />
             )}
             {isActive && isLastChar && cursorAtEnd && !(displayInput.length > word.length) && (
               <motion.span
                 layoutId="cursor-active"
-                className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-0.5 rounded-full bg-primary"
+                className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-[3px] rounded-xs bg-primary"
                 transition={cursorTransition}
               />
             )}
@@ -71,7 +71,7 @@ export const WordItem = memo(function WordItem({
             {eIdx === displayInput.length - word.length - 1 && isActive && (
               <motion.span
                 layoutId="cursor-active"
-                className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-0.5 rounded-full bg-primary"
+                className="typing-cursor absolute top-0.5 -right-px h-[1.2em] w-[3px] rounded-xs bg-primary"
                 transition={cursorTransition}
               />
             )}

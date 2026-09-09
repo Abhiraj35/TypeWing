@@ -150,9 +150,9 @@ function KeyboardKeys({ layout }: { layout: KeyboardLayout }) {
   }
 
   return (
-    <div className="w-fit rounded-[16px] border-2 border-black bg-black/70 p-3 dark:border-white/20 dark:bg-white/20">
-      <div className="rounded-[5px] rounded-t-[8px] border border-black bg-black/80 dark:border-zinc-500 dark:bg-zinc-700">
-        <div className="-space-y-1 -translate-y-1 overflow-hidden rounded-[5px]">
+    <div className="w-fit rounded-[18px] border border-black/10 bg-neutral-200/90 p-2.5 shadow-xl ring-1 ring-black/5 dark:border-white/10 dark:bg-neutral-900/90 dark:ring-white/5 dark:shadow-2xl">
+      <div className="rounded-[8px] rounded-t-[10px] border border-black/10 bg-neutral-300/60 p-0.5 dark:border-white/5 dark:bg-neutral-950/60">
+        <div className="-space-y-1 -translate-y-1 overflow-hidden rounded-[6px]">
           <Row>
             <Key keyCode="Escape">esc</Key>
             <Key keyCode="F1"><Icon><SunDim size={10} /></Icon><span>F1</span></Key>

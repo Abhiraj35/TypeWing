@@ -45,43 +45,56 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     setKeyboardSoundVolume,
   } = useSettings()
 
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [open, onClose])
+
   return (
     <AnimatePresence>
       {open && (
-        <>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs"
             onClick={onClose}
+            aria-hidden
           />
-          <motion.aside
-            key="panel"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 340, damping: 34 }}
-            className="fixed top-0 right-0 z-50 flex h-full w-full flex-col border-l border-border bg-background shadow-2xl sm:w-100"
+          <motion.div
+            key="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-title"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            className="relative z-10 flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-border/80 bg-background shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h2 id="settings-title" className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            <div className="flex items-center justify-between border-b border-border/80 px-5 py-3.5">
+              <h2 id="settings-title" className="text-sm font-semibold tracking-wide text-foreground">
                 Settings
               </h2>
               <button
                 type="button"
                 onClick={onClose}
                 ref={closeButtonRef}
-                className="flex h-10 w-10 items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                 aria-label="Close settings"
               >
-                <X size={14} />
+                <X size={16} />
               </button>
             </div>
 
-            <div className="flex-1 space-y-7 overflow-y-auto px-4 py-5">
+            <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
               {/* Accent */}
               <section>
                 <SectionLabel>Accent</SectionLabel>
@@ -282,8 +295,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 </p>
               </section>
             </div>
-          </motion.aside>
-        </>
+          </motion.div>
+        </div>
       )}
     </AnimatePresence>
   )

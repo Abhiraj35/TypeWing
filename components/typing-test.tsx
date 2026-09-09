@@ -1,7 +1,7 @@
 "use client"
 
 import { LayoutGroup, motion, useReducedMotion } from "motion/react"
-import { ArrowClockwise, CaretRight, Clock, CursorClick, Quotes, TextAa } from "@phosphor-icons/react"
+import { ArrowClockwise, Clock, Quotes, TextAa } from "@phosphor-icons/react"
 import { ResultsScreen } from "@/components/results-screen"
 import { Keyboard } from "@/components/ui/Keyboard"
 import { MacKeyboard } from "@/components/ui/mac-keyboard"
@@ -71,7 +71,7 @@ export function TypingTest() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-site flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-site flex-col px-6 pt-2 pb-8">
       <ModeSelector
         mode={mode}
         timeOption={timeOption}
@@ -86,122 +86,115 @@ export function TypingTest() {
         disabled={started}
       />
 
-      <div className="flex flex-1 flex-col items-center justify-center">
+      <div className="flex flex-1 flex-col items-center justify-between pt-4 sm:pt-6">
         {finished && frozenStats ? (
-          <ResultsScreen
-            stats={frozenStats}
-            onRestart={() => onRestart()}
-            onNext={() => onNext()}
-          />
-        ) : (
-          <div className="w-full">
-            <TestMeta
-              started={started}
-              mode={mode}
-              timeLeft={timeLeft}
-              finished={finished}
-              wpm={wpm}
-              accuracy={accuracy}
+          <div className="my-auto flex w-full items-center justify-center py-6">
+            <ResultsScreen
+              stats={frozenStats}
+              onRestart={() => onRestart()}
+              onNext={() => onNext()}
             />
-
-            <div
-              onClick={handleFocus}
-              className="relative mt-7 w-full cursor-text select-none"
-            >
-              <div
-                className="relative overflow-hidden"
-                style={{
-                  fontFamily: fontCssFamily,
-                  fontSize: "1.5rem",
-                  height: "calc(4.875em + 0.5rem)",
-                }}
-              >
-                <input
-                  ref={inputRef}
-                  aria-label="Typing test input"
-                  aria-describedby="active-word-instruction"
-                  className="absolute opacity-0"
-                  onKeyDown={handleKeyDown}
-                  onBlur={handleInputBlur}
-                  onFocus={handleInputFocus}
-                  value={typed}
-                  onChange={() => {}}
-                  autoFocus
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
+          </div>
+        ) : (
+          <>
+            <div className="w-full max-w-5xl">
+              <div className="rounded-2xl p-6 sm:p-8">
+                <TestMeta
+                  started={started}
+                  mode={mode}
+                  timeLeft={timeLeft}
+                  finished={finished}
+                  wpm={wpm}
+                  accuracy={accuracy}
                 />
-                <span id="active-word-instruction" className="sr-only">
-                  Current word: {words[wordIndex] ?? ""}
-                </span>
 
-                {rowOffset > 0 && (
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-linear-to-b from-background to-transparent" />
-                )}
-
-                <LayoutGroup id="words">
-                  <motion.div
-                    className="flex flex-wrap gap-x-2.5 gap-y-1 leading-relaxed"
-                    animate={{
-                      y: -rowOffset,
-                      opacity: !isFocused ? 0.15 : 1,
+                <div
+                  onClick={handleFocus}
+                  className="relative mt-6 w-full cursor-text select-none"
+                >
+                  <div
+                    className="relative overflow-hidden"
+                    style={{
+                      fontFamily: fontCssFamily,
+                      fontSize: "clamp(1.75rem, 2.3vw, 2.05rem)",
+                      height: "calc(5.2em + 0.5rem)",
                     }}
-                    transition={
-                      reduceMotion
-                        ? { duration: 0 }
-                        : { type: "spring", stiffness: 300, damping: 30, mass: 0.8 }
-                    }
                   >
-                    {words.slice(0, Math.min(words.length, wordIndex + 30)).map((word, i) => {
-                        const idx = i
-                        const isActive = idx === wordIndex
-                        const isPast = idx < wordIndex
-                        const displayInput = isActive ? typed : isPast ? wordInputs[idx] ?? "" : ""
-                        return (
-                          <WordItem
-                            key={`${word}-${idx}`}
-                            word={word}
-                            displayInput={displayInput}
-                            isActive={isActive}
-                            isPast={isPast}
-                            elemRef={isActive ? activeWordRef : undefined}
-                          />
-                        )
-                      })}
-                  </motion.div>
-                </LayoutGroup>
-              </div>
-
-                {!isFocused && (
-                  <button
-                    type="button"
-                    onClick={() => inputRef.current?.focus()}
-                    className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded-2xl bg-background/72 backdrop-blur-sm"
-                    aria-label="Click to begin typing"
-                  >
-                    <span className="flex items-center gap-2 text-sm font-medium text-primary">
-                      <CursorClick size={16} aria-hidden />
-                      Click to begin typing
+                    <input
+                      ref={inputRef}
+                      aria-label="Typing test input"
+                      aria-describedby="active-word-instruction"
+                      className="absolute opacity-0"
+                      onKeyDown={handleKeyDown}
+                      onBlur={handleInputBlur}
+                      onFocus={handleInputFocus}
+                      value={typed}
+                      onChange={() => {}}
+                      autoFocus
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                    />
+                    <span id="active-word-instruction" className="sr-only">
+                      Current word: {words[wordIndex] ?? ""}
                     </span>
-                  </button>
-                )}
-            </div>
 
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => onRestart()}
-                aria-label="Restart test"
-                className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <ArrowClockwise size={14} aria-hidden />
-                Restart
-              </button>
+                    {rowOffset > 0 && (
+                      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-linear-to-b from-background to-transparent" />
+                    )}
+
+                    <LayoutGroup id="words">
+                      <motion.div
+                        className="flex flex-wrap gap-x-3.5 gap-y-2 leading-relaxed"
+                        animate={{
+                          y: -rowOffset,
+                          opacity: !isFocused ? 0.15 : 1,
+                        }}
+                        transition={
+                          reduceMotion
+                            ? { duration: 0 }
+                            : { type: "spring", stiffness: 300, damping: 30, mass: 0.8 }
+                        }
+                      >
+                        {words.slice(0, Math.min(words.length, wordIndex + 30)).map((word, i) => {
+                            const idx = i
+                            const isActive = idx === wordIndex
+                            const isPast = idx < wordIndex
+                            const displayInput = isActive ? typed : isPast ? wordInputs[idx] ?? "" : ""
+                            return (
+                              <WordItem
+                                key={`${word}-${idx}`}
+                                word={word}
+                                displayInput={displayInput}
+                                isActive={isActive}
+                                isPast={isPast}
+                                elemRef={isActive ? activeWordRef : undefined}
+                              />
+                            )
+                          })}
+                      </motion.div>
+                    </LayoutGroup>
+                  </div>
+
+                  {!isFocused && (
+                    <button
+                      type="button"
+                      onClick={() => inputRef.current?.focus()}
+                      className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded-xl bg-background/60 backdrop-blur-xs"
+                      aria-label="Click or press any key to focus"
+                    >
+                      <span className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                        Click or press any key to focus
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {keyboardVisible && (
-              <div className="mt-8 flex max-w-full justify-center overflow-x-auto">
+              <div className="mt-auto flex w-full justify-center pt-6 pb-2">
                 {keyboardStyle === "mac" ? (
                   <MacKeyboard {...keyboardProps} />
                 ) : (
@@ -209,7 +202,7 @@ export function TypingTest() {
                 )}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </main>
@@ -243,21 +236,34 @@ function ModeSelector({
   onRestart: () => void
   disabled: boolean
 }) {
+  const getTabClass = (active: boolean) =>
+    cn(
+      "relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer border-b-2",
+      active
+        ? "border-primary text-foreground"
+        : "border-transparent text-muted-foreground hover:text-foreground",
+      disabled && "cursor-not-allowed opacity-50",
+    )
+
+  const getOptionClass = (active: boolean) =>
+    cn(
+      "px-2.5 py-1.5 text-sm font-medium transition-colors cursor-pointer border-b-2",
+      active
+        ? "border-primary text-foreground"
+        : "border-transparent text-muted-foreground hover:text-foreground",
+      disabled && "cursor-not-allowed opacity-50",
+    )
+
   return (
     <div className="flex flex-col items-center gap-2 text-sm">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+      <div className="flex flex-wrap items-center justify-center rounded-xl border border-border/80 bg-card/60 px-2 py-0.5 shadow-xs backdrop-blur-xs">
+        {/* Modes */}
+        <div className="flex items-center">
           <button
             type="button"
             onClick={() => onModeChange("time")}
             disabled={disabled}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
-              mode === "time"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-              disabled && "cursor-not-allowed opacity-60",
-            )}
+            className={getTabClass(mode === "time")}
           >
             <Clock size={14} aria-hidden />
             time
@@ -266,13 +272,7 @@ function ModeSelector({
             type="button"
             onClick={() => onModeChange("words")}
             disabled={disabled}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
-              mode === "words"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-              disabled && "cursor-not-allowed opacity-60",
-            )}
+            className={getTabClass(mode === "words")}
           >
             <TextAa size={14} aria-hidden />
             words
@@ -281,20 +281,18 @@ function ModeSelector({
             type="button"
             onClick={() => onModeChange("quotes")}
             disabled={disabled}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors",
-              mode === "quotes"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-              disabled && "cursor-not-allowed opacity-60",
-            )}
+            className={getTabClass(mode === "quotes")}
           >
             <Quotes size={14} aria-hidden />
             quotes
           </button>
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+        {/* Divider */}
+        <div className="mx-1.5 h-4 w-px bg-border" aria-hidden />
+
+        {/* Options */}
+        <div className="flex items-center">
           {mode === "time"
             ? TIME_OPTIONS.map((opt) => (
                 <button
@@ -302,13 +300,7 @@ function ModeSelector({
                   type="button"
                   onClick={() => onTimeOptionChange(opt)}
                   disabled={disabled}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 transition-colors",
-                    timeOption === opt
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                    disabled && "cursor-not-allowed opacity-60",
-                  )}
+                  className={getOptionClass(timeOption === opt)}
                 >
                   {opt}
                 </button>
@@ -320,13 +312,7 @@ function ModeSelector({
                     type="button"
                     onClick={() => onWordOptionChange(opt)}
                     disabled={disabled}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 transition-colors",
-                      wordOption === opt
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                      disabled && "cursor-not-allowed opacity-60",
-                    )}
+                    className={getOptionClass(wordOption === opt)}
                   >
                     {opt}
                   </button>
@@ -337,28 +323,26 @@ function ModeSelector({
                     type="button"
                     onClick={() => onQuoteLengthChange(ql)}
                     disabled={disabled}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 transition-colors",
-                      quoteLength === ql
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                      disabled && "cursor-not-allowed opacity-60",
-                    )}
+                    className={getOptionClass(quoteLength === ql)}
                   >
                     {ql}
                   </button>
                 ))}
         </div>
 
-        <motion.button
+        {/* Divider */}
+        <div className="mx-1.5 h-4 w-px bg-border" aria-hidden />
+
+        {/* Integrated Restart Button */}
+        <button
           type="button"
           onClick={onRestart}
-          whileTap={{ scale: 0.96 }}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border p-1.5 text-muted-foreground transition-[background-color,color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+          title="Restart test"
           aria-label="Restart"
         >
-          <CaretRight size={14} aria-hidden />
-        </motion.button>
+          <ArrowClockwise size={14} aria-hidden />
+        </button>
       </div>
 
       {mode === "quotes" && quoteAuthor && (
@@ -386,12 +370,12 @@ function TestMeta({
   accuracy: number
 }) {
   return (
-    <div className="flex items-center justify-between text-sm tabular-nums text-muted-foreground">
-      <span className="w-24" />
-      <span className="text-sm font-mono" aria-label={mode === "time" ? `Time remaining: ${timeLeft} seconds` : undefined}>
+    <div className="flex items-center justify-between text-base tabular-nums text-muted-foreground">
+      <span className="w-28" />
+      <span className="text-base sm:text-lg font-mono font-medium" aria-label={mode === "time" ? `Time remaining: ${timeLeft} seconds` : undefined}>
         {mode === "time" ? timeLeft : ""}
       </span>
-      <div className="flex w-24 items-center justify-end gap-3">
+      <div className="flex w-28 items-center justify-end gap-3 text-sm sm:text-base">
         {started && !finished && (
           <>
             <span>{wpm} wpm</span>
