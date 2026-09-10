@@ -16,7 +16,7 @@ import {
 } from "@/hooks/use-typing-test"
 import { KEYBOARD_SOUND_OPTIONS } from "@/lib/settings-data"
 import { QUOTE_LENGTHS, type QuoteLength } from "@/lib/quotes"
-import type { TestMode } from "@/lib/wpm-count"
+import type { TestMode } from "@shared/wpm-count"
 import { cn } from "@/lib/utils"
 
 export function TypingTest() {

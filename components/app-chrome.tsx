@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Gear, Info } from "@phosphor-icons/react"
+import { Gear, Info, UsersThree } from "@phosphor-icons/react"
 import { getStrictContext } from "@/lib/get-strict-context"
 import { cn } from "@/lib/utils"
 import { SettingsPanel } from "@/components/settings-panel"
@@ -56,6 +56,19 @@ function SiteHeader() {
 
         <nav aria-label="Site navigation" className="flex items-center gap-1 sm:gap-1.5">
           <ThemeSwitcher className="mr-1 flex h-9 items-center justify-center rounded-lg border border-border/70 bg-background px-1 shadow-xs transition-colors hover:border-border hover:bg-muted/50" />
+          <Link
+            href="/race"
+            prefetch
+            className={cn(
+              iconButtonClass,
+              pathname.startsWith("/race") && "bg-muted text-foreground",
+            )}
+            aria-current={pathname.startsWith("/race") ? "page" : undefined}
+            aria-label="Multiplayer"
+            title="Multiplayer"
+          >
+            <UsersThree size={17} aria-hidden />
+          </Link>
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
