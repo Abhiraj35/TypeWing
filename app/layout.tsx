@@ -28,9 +28,33 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+const description = siteConfig.description
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: `${siteConfig.name} — Typing Speed Test`,
-  description: siteConfig.description,
+  description,
+  openGraph: {
+    type: "website",
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} — Typing Speed Test`,
+    description,
+    images: [
+      {
+        url: "/og.webp",
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} — Typing Speed Test`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} — Typing Speed Test`,
+    description,
+    images: ["/og.png"],
+  },
 }
 
 export default function RootLayout({
