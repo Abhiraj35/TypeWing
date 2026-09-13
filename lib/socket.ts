@@ -7,7 +7,7 @@ let socket: TypedSocket | null = null
 
 export function getSocket(): TypedSocket {
   if (!socket) {
-    socket = io(process.env.SOCKET_URL || "http://localhost:3001", {
+    socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001", {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 5,
