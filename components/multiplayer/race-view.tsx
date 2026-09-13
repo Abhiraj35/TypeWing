@@ -41,7 +41,7 @@ export function RaceView({ spectator = false }: { spectator?: boolean }) {
       ) : (
         <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xs sm:p-8">
           <div className="mb-5 flex items-end justify-between gap-4">
-            <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">TypeWing race</p><p className="mt-1 text-sm text-muted-foreground">{typing.finished ? "Finished — waiting for the race to end" : `Words remaining: ${Math.max(0, raceText.length - typing.wordIndex)}`}</p></div>
+            <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Typewing race</p><p className="mt-1 text-sm text-muted-foreground">{typing.finished ? "Finished — waiting for the race to end" : `Words remaining: ${Math.max(0, raceText.length - typing.wordIndex)}`}</p></div>
             <div className="text-right font-mono text-sm"><span className="text-2xl font-semibold text-primary">{typing.wpm}</span><span className="ml-1 text-muted-foreground">wpm</span><p className="mt-1 text-xs text-muted-foreground">{typing.accuracy}% accuracy</p><p className="mt-1 text-xs font-semibold text-foreground">{formatRaceTime(timeRemaining)} left</p></div>
           </div>
           <div onClick={() => typing.inputRef.current?.focus()} className="relative cursor-text select-none">

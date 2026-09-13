@@ -7,6 +7,6 @@ export const DEFAULT_WORD_COUNT = 30
 export const DEFAULT_MAX_PLAYERS = 8
 export const DEFAULT_TIME_LIMIT = 90
 
-export const WORD_COUNT_OPTIONS = [20, 30, 50] as const
+export const WORD_COUNT_OPTIONS = [20, 30, 50, 100] as const
 export const MAX_PLAYER_OPTIONS = [2, 3, 4, 5, 6, 7, 8] as const
 export const TIME_LIMIT_OPTIONS = [60, 90, 120] as const

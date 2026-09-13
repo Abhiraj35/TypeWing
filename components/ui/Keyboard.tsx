@@ -297,7 +297,7 @@ interface KeyVariantDefinition {
 const KEYCAP_FONT_FAMILY =
   '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif'
 
-// Accent keys reuse TypeWing's --primary so the keyboard follows the app accent.
+// Accent keys reuse Typewing's --primary so the keyboard follows the app accent.
 const KEYBOARD_VARIANTS: Record<KeyVariantSlot, KeyVariantDefinition> = {
   accent: { bg: "var(--primary)", text: "var(--primary-foreground)" },
   dark: { bg: "#3a3a3a", text: "rgba(255,255,255,0.82)" },

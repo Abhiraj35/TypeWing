@@ -48,7 +48,7 @@ export function useKeyboardInteraction({
 
   useEffect(() => {
     void soundRef.current?.load(soundConfigUrl ?? null)
-    return () => soundRef.current?.unload()
+    return () => soundRef.current?.dispose()
   }, [soundConfigUrl])
 
   useEffect(() => {

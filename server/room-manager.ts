@@ -28,6 +28,7 @@ export interface Room {
   players: Map<string, InternalPlayer>
   config: RoomConfig
   text: string[] | null
+  countdownStartAt: number | null
   startTime: number | null
   createdAt: number
   createdByIp: string
@@ -56,7 +57,7 @@ export function normalizeConfig(input: Partial<RoomConfig> | null | undefined): 
 
 export function validateUsername(value: unknown): string | null {
   if (typeof value !== "string") return null
-  const trimmed = value.trim().slice(0, 20).replace(/[^\x20-\x7E]/g, "")
+  const trimmed = value.trim().slice(0, 20).replace(/\p{Cc}/gu, "")
   return trimmed.length > 0 ? trimmed : null
 }
 
@@ -97,6 +98,7 @@ export function createRoom(hostId: string, hostName: string, inputConfig: Partia
     }]]),
     config: normalizeConfig(inputConfig),
     text: null,
+    countdownStartAt: null,
     startTime: null,
     createdAt: Date.now(),
     createdByIp: ip,
@@ -118,6 +120,7 @@ export function joinRoom(roomId: string, socketId: string, username: string): { 
   if (!room || room.status === "finished") return null
   const activePlayers = [...room.players.values()].filter((player) => !player.spectator).length
   const spectator = room.status !== "waiting"
+  if (room.players.size >= room.config.maxPlayers) return null
   if (!spectator && activePlayers >= room.config.maxPlayers) return null
   const name = uniqueName(room, username)
   room.players.set(socketId, { name, wpm: 0, progress: 0, finishTime: null, rank: null, spectator })
@@ -167,6 +170,7 @@ export function resetForRematch(room: Room): void {
   clearRoomTimers(room)
   room.status = "waiting"
   room.text = null
+  room.countdownStartAt = null
   room.startTime = null
   room.rematchVotes.clear()
   for (const player of room.players.values()) {
@@ -174,7 +178,6 @@ export function resetForRematch(room: Room): void {
     player.progress = 0
     player.finishTime = null
     player.rank = null
-    player.spectator = false
   }
 }
 

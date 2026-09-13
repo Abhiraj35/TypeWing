@@ -117,7 +117,7 @@
 
 @layer components {
   .field {
-    @apply min-h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none;
+    @apply min-h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground/60 focus:border-primary;
   }
 
   .button-primary,

@@ -98,6 +98,15 @@ io.on("connection", (socket) => {
     if (!result) return emitError(socket.id, "That room is full, finished, or no longer available.")
     void socket.join(result.room.id)
     emitRoomState(result.room)
+    if (result.room.status === "countdown" && result.room.text && result.room.countdownStartAt !== null) {
+      socket.emit("game:countdown", { text: result.room.text, startAt: result.room.countdownStartAt })
+    } else if (result.room.status === "racing" && result.room.text && result.room.startTime !== null) {
+      socket.emit("game:countdown", { text: result.room.text, startAt: result.room.startTime })
+      socket.emit("game:go", {
+        startAt: result.room.startTime,
+        endsAt: result.room.startTime + result.room.config.timeLimit * 1000,
+      })
+    }
   })
 
   socket.on("game:startRequest", (data) => {
@@ -112,11 +121,13 @@ io.on("connection", (socket) => {
     room.text = getRandomText(room.config.wordCount)
     room.startTime = null
     const startAt = Date.now() + COUNTDOWN_MS
+    room.countdownStartAt = startAt
     emitRoomState(room)
     io.to(room.id).emit("game:countdown", { text: room.text, startAt })
     room.countdownTimer = setTimeout(() => {
       if (room.status !== "countdown") return
       room.status = "racing"
+      room.countdownStartAt = null
       room.startTime = Date.now()
       const endsAt = room.startTime + room.config.timeLimit * 1000
       io.to(room.id).emit("room:state", serializeRoom(room))
@@ -159,7 +170,7 @@ io.on("connection", (socket) => {
     const room = typeof data?.roomId === "string" ? getRoom(data.roomId) : undefined
     if (!room || room.status !== "finished" || !room.players.has(socket.id)) return
     room.rematchVotes.add(socket.id)
-    const needed = Math.max(1, Math.ceil(room.players.size / 2))
+    const needed = Math.max(1, Math.floor(room.players.size / 2) + 1)
     io.to(room.id).emit("game:rematchVote", { votes: room.rematchVotes.size, needed })
     if (room.rematchVotes.size < needed) return
     resetForRematch(room)
@@ -190,7 +201,7 @@ cleanupInterval.unref?.()
 const port = Number(process.env.PORT || 3001)
 httpServer.listen(port, () => {
   const address = httpServer.address() as AddressInfo | null
-  console.log(`TypeWing multiplayer server listening on ${address?.port ?? port}`)
+  console.log(`Typewing multiplayer server listening on ${address?.port ?? port}`)
 })
 
 export { app, httpServer, io, endGame }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTheme } from "next-themes"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { CaretDown, Monitor, Moon, Sun } from "@phosphor-icons/react"
 import { useMounted } from "@/hooks/use-mounted"
 import { cn } from "@/lib/utils"
@@ -29,6 +29,7 @@ export function ThemeSwitcher({className}: {className?: string}) {
   const { resolvedTheme, setTheme, theme } = useTheme()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
 
   const close = useCallback(() => setOpen(false), [])
 
@@ -94,9 +95,7 @@ export function ThemeSwitcher({className}: {className?: string}) {
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
-            role="menu"
-            aria-label="Select theme"
+            transition={{ duration: reduceMotion ? 0 : 0.12, ease: "easeOut" }}
             className="absolute top-full right-0 z-50 mt-1.5 min-w-35 overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-lg"
           >
             {THEME_OPTIONS.map((opt) => {
@@ -105,8 +104,7 @@ export function ThemeSwitcher({className}: {className?: string}) {
                 <button
                   key={opt.id}
                   type="button"
-                  role="menuitemradio"
-                  aria-checked={active}
+                  aria-pressed={active}
                   onClick={() => {
                     setTheme(opt.id)
                     close()

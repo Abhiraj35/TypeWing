@@ -11,8 +11,8 @@ export const metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto flex w-full max-w-site flex-col gap-8 px-6 py-12">
-      <div className="flex flex-col gap-2">
+    <main className="mx-auto flex w-full max-w-site flex-col gap-8 px-6 py-12 items-center">
+      <div className="flex flex-col gap-2 items-center">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">About {siteConfig.name}</h1>
         <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
           {siteConfig.description}
@@ -47,7 +47,7 @@ export default function AboutPage() {
       </div>
 
       <div className="pt-4 border-t border-border/60 max-w-2xl flex items-center justify-between text-sm text-muted-foreground">
-        <span>Open source project</span>
+        <span className="pr-2">Open source project</span>
         <a
           href="https://github.com/Abhiraj35/TypeWing"
           target="_blank"

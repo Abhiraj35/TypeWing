@@ -237,4 +237,12 @@ export class KeyboardSoundEngine {
     this.failedSamples.clear()
     this.loaded = false
   }
+
+  dispose(): void {
+    this.generation += 1
+    this.unload()
+    const ctx = this.ctx
+    this.ctx = null
+    if (ctx) void ctx.close().catch(() => undefined)
+  }
 }

@@ -20,13 +20,24 @@ function plausibleWpm(room: Room, progress: number, wpm: number): boolean {
   return wpm <= Math.max(40, expectedWpm * 1.6 + 25)
 }
 
+function progressWithinElapsedTime(room: Room, progress: number): boolean {
+  if (!room.startTime) return true
+  const totalChars = (room.text ?? []).join(" ").length
+  if (totalChars === 0) return progress <= 0
+  const elapsedMinutes = Math.max((Date.now() - room.startTime) / 60_000, 0)
+  const maxChars = elapsedMinutes * MAX_POSSIBLE_WPM * 5
+  const maxProgress = Math.min(100, (maxChars / totalChars) * 100)
+  return progress <= maxProgress
+}
+
 export function validateProgress(player: { progress: number }, newProgress: unknown, newWpm: unknown, room: Room): boolean {
   if (!finiteNumber(newProgress) || !finiteNumber(newWpm)) return false
   if (newProgress < 0 || newProgress > 100) return false
   if (newProgress < player.progress - 5) return false
+  if (!progressWithinElapsedTime(room, newProgress)) return false
   return plausibleWpm(room, newProgress, newWpm)
 }
 
 export function validateFinishWpm(finalWpm: unknown, room: Room): boolean {
-  return finiteNumber(finalWpm) && finalWpm >= 0 && finalWpm <= MAX_POSSIBLE_WPM && plausibleWpm(room, 100, finalWpm)
+  return finiteNumber(finalWpm) && finalWpm >= 0 && finalWpm <= MAX_POSSIBLE_WPM && progressWithinElapsedTime(room, 100) && plausibleWpm(room, 100, finalWpm)
 }

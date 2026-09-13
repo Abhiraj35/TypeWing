@@ -24,6 +24,7 @@ interface MultiplayerContextValue {
   sendProgress: (wpm: number, progress: number) => void
   sendFinished: (finalWpm: number) => void
   requestRematch: () => void
+  leaveRoom: () => void
 }
 
 const MultiplayerContext = createContext<MultiplayerContextValue | null>(null)
@@ -123,6 +124,20 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       setError(message)
       window.setTimeout(() => setError(null), 5000)
     }
+    const onDisconnect = () => {
+      if (countdownTimerRef.current !== null) window.clearInterval(countdownTimerRef.current)
+      countdownTimerRef.current = null
+      setRoomId(null)
+      setRoomState(null)
+      setCountdown(null)
+      setRaceText([])
+      setIsRacing(false)
+      setRaceStartedAt(null)
+      setRaceEndsAt(null)
+      setTimeRemaining(null)
+      setFinalLeaderboard(null)
+      setRematchVotes(null)
+    }
 
     socket.on("room:created", onCreated)
     socket.on("room:state", onState)
@@ -135,6 +150,7 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
     socket.on("game:rematchVote", onVote)
     socket.on("game:rematchStart", onRematchStart)
     socket.on("error", onError)
+    socket.on("disconnect", onDisconnect)
     return () => {
       socket.off("room:created", onCreated)
       socket.off("room:state", onState)
@@ -147,6 +163,7 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       socket.off("game:rematchVote", onVote)
       socket.off("game:rematchStart", onRematchStart)
       socket.off("error", onError)
+      socket.off("disconnect", onDisconnect)
     }
   }, [pathname, router, socket])
 
@@ -178,12 +195,27 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   const requestRematch = useCallback(() => {
     if (roomId) socket.emit("game:rematchRequest", { roomId })
   }, [roomId, socket])
+  const leaveRoom = useCallback(() => {
+    setRoomId(null)
+    setRoomState(null)
+    setCountdown(null)
+    setRaceText([])
+    setIsRacing(false)
+    setRaceStartedAt(null)
+    setRaceEndsAt(null)
+    setTimeRemaining(null)
+    setFinalLeaderboard(null)
+    setRematchVotes(null)
+    socket.disconnect()
+    socket.connect()
+    router.push("/race")
+  }, [router, socket])
 
   const value = useMemo(() => ({
     connected, roomId, roomState, countdown, raceText, isRacing, raceStartedAt, timeRemaining, lastRaceStartedAt, finalLeaderboard,
-    rematchVotes, error, createRoom, joinRoom, startGame, sendProgress, sendFinished, requestRematch,
+    rematchVotes, error, createRoom, joinRoom, startGame, sendProgress, sendFinished, requestRematch, leaveRoom,
   }), [connected, roomId, roomState, countdown, raceText, isRacing, raceStartedAt, timeRemaining, lastRaceStartedAt, finalLeaderboard, rematchVotes, error,
-    createRoom, joinRoom, startGame, sendProgress, sendFinished, requestRematch])
+    createRoom, joinRoom, startGame, sendProgress, sendFinished, requestRematch, leaveRoom])
 
   return <MultiplayerContext.Provider value={value}>{children}</MultiplayerContext.Provider>
 }
