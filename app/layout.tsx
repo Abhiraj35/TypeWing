@@ -1,4 +1,11 @@
 import { Geist_Mono, Outfit } from "next/font/google"
+import {
+  GeistPixelSquare,
+  GeistPixelGrid,
+  GeistPixelCircle,
+  GeistPixelTriangle,
+  GeistPixelLine,
+} from "geist/font/pixel"
 import type { Metadata } from "next"
 import "./globals.css"
 import { AppChrome } from "@/components/app-chrome"
@@ -39,6 +46,11 @@ export default function RootLayout({
         "antialiased font-sans",
         outfit.variable,
         fontMono.variable,
+        GeistPixelSquare.variable,
+        GeistPixelGrid.variable,
+        GeistPixelCircle.variable,
+        GeistPixelTriangle.variable,
+        GeistPixelLine.variable,
       )}
     >
       <body suppressHydrationWarning>

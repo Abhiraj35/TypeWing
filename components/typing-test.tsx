@@ -16,7 +16,7 @@ import {
 } from "@/hooks/use-typing-test"
 import { KEYBOARD_SOUND_OPTIONS } from "@/lib/settings-data"
 import { QUOTE_LENGTHS, type QuoteLength } from "@/lib/quotes"
-import type { TestMode } from "@/lib/wpm-count"
+import type { TestMode } from "@shared/wpm-count"
 import { cn } from "@/lib/utils"
 
 export function TypingTest() {
@@ -182,10 +182,10 @@ export function TypingTest() {
                       type="button"
                       onClick={() => inputRef.current?.focus()}
                       className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded-xl bg-background/60 backdrop-blur-xs"
-                      aria-label="Click or press any key to focus"
+                      aria-label="Click to focus"
                     >
                       <span className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                        Click or press any key to focus
+                        Click to focus
                       </span>
                     </button>
                   )}

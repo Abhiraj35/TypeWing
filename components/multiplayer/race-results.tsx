@@ -1,0 +1,10 @@
+"use client"
+
+import { Trophy } from "@phosphor-icons/react"
+import type { Player } from "@shared/types"
+import { useMultiplayer } from "./multiplayer-provider"
+
+export function RaceResults({ players }: { players: Player[] }) {
+  const { requestRematch, rematchVotes, lastRaceStartedAt } = useMultiplayer()
+  return <main className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-site items-center justify-center px-6 py-10"><div className="w-full max-w-2xl rounded-3xl border border-border/70 bg-card/75 p-6 shadow-xl shadow-primary/5 sm:p-9"><div className="text-center"><Trophy size={32} className="mx-auto text-primary" weight="duotone" /><p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Race complete</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Well typed.</h1></div><div className="mt-8 space-y-2">{players.map((player) => <div key={player.id} className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/50 px-4 py-3"><span className="w-7 text-center font-mono text-sm text-muted-foreground">{player.rank ?? "—"}</span><span className="min-w-0 flex-1 truncate text-sm font-medium">{player.name}{player.spectator && <span className="ml-2 text-xs text-muted-foreground">spectator</span>}</span><span className="text-right"><span className="block font-mono text-sm font-semibold">{player.wpm} wpm</span><span className="block text-xs text-muted-foreground">{player.finishTime && lastRaceStartedAt ? `${Math.max(0, (player.finishTime - lastRaceStartedAt) / 1000).toFixed(1)}s` : "—"}</span></span></div>)}</div><div className="mt-8 flex flex-col items-center gap-3"><button type="button" onClick={requestRematch} className="w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">Rematch</button>{rematchVotes && <p className="text-xs text-muted-foreground">{rematchVotes.votes}/{rematchVotes.needed} players voted for a rematch</p>}</div></div></main>
+}

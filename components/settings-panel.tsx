@@ -26,6 +26,7 @@ const PREVIEW_TEXT = {
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const previousActiveElementRef = useRef<HTMLElement | null>(null)
   const reduceMotion = useReducedMotion()
   const {
     accent,
@@ -44,6 +45,20 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     keyboardSoundVolume,
     setKeyboardSoundVolume,
   } = useSettings()
+
+  useEffect(() => {
+    if (open) {
+      previousActiveElementRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+      closeButtonRef.current?.focus()
+      return
+    }
+
+    const previousActiveElement = previousActiveElementRef.current
+    if (previousActiveElement?.isConnected) previousActiveElement.focus()
+    previousActiveElementRef.current = null
+  }, [open])
 
   useEffect(() => {
     if (!open) return

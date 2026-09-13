@@ -1,4 +1,4 @@
-// Pure WPM / accuracy counting math. No React, no browser APIs — easy to test.
+// Pure WPM / accuracy counting math shared by the browser and race server.
 
 export type TestMode = "time" | "words" | "quotes"
 
@@ -11,47 +11,31 @@ export interface WpmCounts {
   missedChars: number
 }
 
-interface CountParams {
+export interface CountParams {
   targetWords: string[]
   wordInputs: string[]
   typed: string
   wordIndex: number
   mode: TestMode
   final: boolean
-  /** False when the test completed by character (no trailing space was typed). */
   trailingSpace?: boolean
 }
 
-export function countWpm({
-  targetWords,
-  wordInputs,
-  typed,
-  wordIndex,
-  mode,
-  final,
-  trailingSpace,
-}: CountParams): WpmCounts {
-  // Invariant: `wordInputs.length === wordIndex` (guards if briefly out of sync).
+export function countWpm({ targetWords, wordInputs, typed, wordIndex, mode, final, trailingSpace }: CountParams): WpmCounts {
   const inputWords = [...wordInputs.slice(0, wordIndex), typed]
-
   let correctWordChars = 0
   let allCorrectChars = 0
   let incorrectChars = 0
   let extraChars = 0
   let missedChars = 0
   let correctSpaces = 0
-
-  const isTimedTest = mode === "time"
-  const shouldCountPartialLastWord = !final || (final && isTimedTest)
-  // When the test completed by character (no trailing space typed), the empty
-  // string appended to inputWords is a phantom — don't count a space before it.
+  const shouldCountPartialLastWord = !final || (final && mode === "time")
   const spaceLimit = trailingSpace !== false ? inputWords.length - 1 : inputWords.length - 2
 
   for (let i = 0; i < inputWords.length; i++) {
     const inputWord = inputWords[i]!
     const targetWord = targetWords[i]
     if (targetWord === undefined) break
-
     if (inputWord === targetWord) {
       correctWordChars += targetWord.length
       allCorrectChars += targetWord.length
@@ -61,9 +45,7 @@ export function countWpm({
         if (c < targetWord.length) {
           if (inputWord[c] === targetWord[c]) allCorrectChars++
           else incorrectChars++
-        } else {
-          extraChars++
-        }
+        } else extraChars++
       }
     } else {
       let correct = 0
@@ -73,30 +55,25 @@ export function countWpm({
         if (c < inputWord.length) {
           if (inputWord[c] === targetWord[c]) correct++
           else incorrect++
-        } else {
-          missed++
-        }
+        } else missed++
       }
       allCorrectChars += correct
       incorrectChars += incorrect
-
       if (i === inputWords.length - 1 && shouldCountPartialLastWord) {
         if (incorrect === 0) correctWordChars += correct
-      } else {
-        missedChars += missed
-      }
+      } else missedChars += missed
     }
   }
 
   return { correctWordChars, correctSpaces, allCorrectChars, incorrectChars, extraChars, missedChars }
 }
 
-export function wpmNumeratorFromCounts(c: WpmCounts): number {
-  return c.correctWordChars + c.correctSpaces
+export function wpmNumeratorFromCounts(counts: WpmCounts): number {
+  return counts.correctWordChars + counts.correctSpaces
 }
 
-export function accuracyFromCounts(c: WpmCounts): number {
-  const denom = c.allCorrectChars + c.incorrectChars + c.extraChars + c.missedChars
-  if (denom <= 0) return 100
-  return Math.round((c.allCorrectChars / denom) * 100)
+export function accuracyFromCounts(counts: WpmCounts): number {
+  const denominator = counts.allCorrectChars + counts.incorrectChars + counts.extraChars + counts.missedChars
+  if (denominator <= 0) return 100
+  return Math.round((counts.allCorrectChars / denominator) * 100)
 }
