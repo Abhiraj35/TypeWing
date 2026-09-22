@@ -37,11 +37,20 @@ App chrome, the ui and motion component primitives, static pages, metadata, and 
 
 ## Slice 1: Multiplayer racing
 
-### 1. Multiplayer racing · in-progress · needs a decision
+### 1. Multiplayer racing · in-progress
 The room based racing loop runs today but is not production grade: reconnect and refresh behavior, state sync, pacing and fairness, UI polish, and how the server is operated all need rework. This slice is the whole pass. The realtime stack decision is open and the design decides on merit: keep and harden the custom Socket.IO server, or move to a managed realtime service.
 **Done when:** a race survives disconnects and refreshes without desync, countdown and race both start and end on time for up to 8 racers, the room and results UI feel as polished as the single player flow, and the server runs reliably as a single instance for up to 50 concurrent racers.
-- [ ] Design it (spec): `/architect multiplayer racing`
+- [x] Design it (spec): `/architect multiplayer racing`
+spec: [0001](../specs/0001-multiplayer-racing-hardening.md)
 code in `server/`, `app/race/`, `components/multiplayer/`, `shared/types.ts`
+
+**Build plan** (from 0001):
+- [ ] Build it: /develop multiplayer racing
+  - [ ] Milestone 1: Seat identity and the resume thread (token issue, room:resume, replay, playerId based identity, connection states on the track), covers AC-1 and AC-5
+  - [ ] Milestone 2: Grace, drop, and edge policies (15 second grace and DNF scoring, race to the timer, host migration, rematch cleanup, resume limits and kick), covers AC-2, AC-3, AC-6
+  - [ ] Milestone 3: UI polish and operations (connection banner, invite and lobby polish, results polish, 50 racer load check), covers AC-4 and AC-6
+- [ ] Verify it: /check verify multiplayer racing
+- [ ] Test it: /test multiplayer racing
 
 ## Deferred
 
