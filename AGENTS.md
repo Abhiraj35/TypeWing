@@ -9,7 +9,7 @@
 
 ## Build approach
 
-<TBD, set by /scope>
+Tracer Bullet (vertical slices that work end to end; the existing room loop is the walking skeleton and each slice thickens it).
 
 ## Commands
 
@@ -30,6 +30,10 @@ pnpm build
 pnpm typecheck                  # client
 cd server && pnpm typecheck     # game server
 pnpm lint
+
+# Test
+pnpm test                       # client: vitest on lib/ and shared/ logic
+cd server && pnpm test          # game server: vitest unit + wire integration
 ```
 
 ## Specs
@@ -54,7 +58,9 @@ Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`.
 
 ## Agent skills
 
-Declined: websocket-engineer, nextjs-app-router-patterns, next-dev-loop, next-cache-components-adoption
+Declined: websocket-engineer, nextjs-app-router-patterns, next-dev-loop, next-cache-components-adoption, and the alternate vitest/happy-dom/socket.io candidates from the /sync discovery (LambdaTest vitest-skill, PaulRBerg dot-agents, sablier-labs vitest, TerminalSkills happy-dom and socketio, corey-alix happy-dom, iulspop happy-dom-tests, aj-geddes websocket)
+Installed: antfu/skills (vitest) for the vitest test suites
+MCP recommended, not connected: @djankies/vitest-mcp, to run the suites interactively from an agent
 
 ## Context files
 

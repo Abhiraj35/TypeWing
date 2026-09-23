@@ -16,7 +16,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | C | Settings & personalization | Existing | existing |
 | D | Personal bests & persistence | Existing | existing |
 | E | Site shell, design system & SEO | Existing | existing |
-| 1 | Multiplayer racing | Slice 1 | in-progress |
+| 1 | Multiplayer racing | Slice 1 | done |
 
 ## Existing (brownfield enrollment)
 
@@ -50,7 +50,7 @@ code in `server/`, `app/race/`, `components/multiplayer/`, `shared/types.ts`
   - [x] Milestone 2: Grace, drop, and edge policies (15 second grace and DNF scoring, race to the timer, host migration, rematch cleanup, resume limits and kick), covers AC-2, AC-3, AC-6
   - [x] Milestone 3: UI polish and operations (connection banner, invite and lobby polish, results polish, 50 racer load check), covers AC-4 and AC-6
 - [x] Verify it: /check verify multiplayer racing
-- [ ] Test it: /test multiplayer racing
+- [x] Test it: /test multiplayer racing
 
 ## Deferred
 

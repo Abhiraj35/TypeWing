@@ -1,7 +1,7 @@
 # 0001. Multiplayer racing: production hardening with seat resume
 
 **Date**: 2026-09-22
-**Status**: Proposed
+**Status**: Accepted
 
 ## Summary
 

@@ -21,6 +21,7 @@ cd server
 pnpm dev          # tsx watch index.ts
 pnpm start        # tsx index.ts
 pnpm typecheck
+pnpm test         # vitest: room manager unit + Socket.IO wire integration
 ```
 
 ## Conventions
@@ -29,6 +30,7 @@ pnpm typecheck
 - Rooms are in memory (`Map<string, Room>`); codes are 6 characters from an unambiguous nanoid alphabet.
 - Late joiners become spectators; host departure migrates the host; races end when the server timer expires or fewer than two racers remain.
 - Idempotent guards on every handler: already in a room, wrong room status, finished player.
+- Wire integration tests boot the real server on a random port (vitest `env.PORT=0`); every test socket shares one IP, so the suite reuses a single room to stay under the 5 rooms per IP cap and pre attaches listeners before emitting to avoid losing a burst of events.
 
 ## Gotchas
 
