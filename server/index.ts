@@ -106,7 +106,7 @@ function onSeatExpired(room: Room, player: InternalPlayer): void {
 }
 
 io.on("connection", (socket) => {
-  socket.on("room:create", (data) => {
+  socket.on("room:create", async (data) => {
     if (rateLimited(socket.id, "room:create", 3, 60_000)) return
     if (findRoomForPlayer(socket.id)) return emitError(socket.id, "You are already in a room.")
     const username = validateUsername(data?.username)
@@ -114,13 +114,13 @@ io.on("connection", (socket) => {
     const ip = socket.handshake.address || "unknown"
     const created = createRoom(socket.id, username, data?.config, ip)
     if (!created) return emitError(socket.id, "This connection has reached its room limit.")
-    void socket.join(created.room.id)
+    await socket.join(created.room.id)
     socket.emit("room:created", { roomId: created.room.id })
     socket.emit("player:seat", { playerId: created.playerId, resumeToken: created.resumeToken })
     emitRoomState(created.room)
   })
 
-  socket.on("room:join", (data) => {
+  socket.on("room:join", async (data) => {
     if (rateLimited(socket.id, "room:join", 5, 10_000)) return
     if (findRoomForPlayer(socket.id)) return emitError(socket.id, "You are already in a room.")
     const username = validateUsername(data?.username)
@@ -128,7 +128,7 @@ io.on("connection", (socket) => {
     if (!username || !/^[A-Z2-9]{6}$/.test(roomId)) return emitError(socket.id, "Enter a valid six-character room code.")
     const result = joinRoom(roomId, socket.id, username)
     if (!result) return emitError(socket.id, "That room is full, finished, or no longer available.")
-    void socket.join(result.room.id)
+    await socket.join(result.room.id)
     socket.emit("player:seat", { playerId: result.playerId, resumeToken: result.resumeToken })
     emitRoomState(result.room)
     if (result.room.status === "countdown" && result.room.text && result.room.countdownStartAt !== null) {
@@ -142,7 +142,7 @@ io.on("connection", (socket) => {
     }
   })
 
-  socket.on("room:resume", (data) => {
+  socket.on("room:resume", async (data) => {
     if (rateLimited(socket.id, "room:resume", 6, 10_000)) return
     const roomId = typeof data?.roomId === "string" ? data.roomId.trim().toUpperCase() : ""
     const resumeToken = typeof data?.resumeToken === "string" ? data.resumeToken : ""
@@ -158,7 +158,7 @@ io.on("connection", (socket) => {
       // A second live resume replaces the older connection and kicks it out
       // of the room so only one socket is bound to the seat.
       const previous = player.socketId ? io.sockets.sockets.get(player.socketId) : undefined
-      previous?.leave(room.id)
+      await previous?.leave(room.id)
       player.socketId = socket.id
       player.connectionState = "connected"
       player.seatExpiresAt = null
@@ -166,7 +166,7 @@ io.on("connection", (socket) => {
         clearTimeout(player.seatExpiryTimer)
         player.seatExpiryTimer = null
       }
-      void socket.join(room.id)
+      await socket.join(room.id)
       socket.emit("player:seatResumed", { playerId: player.playerId, progress: player.progress, wpm: player.wpm })
       io.to(room.id).emit("player:connection", { playerId: player.playerId, connectionState: "connected" })
     }
