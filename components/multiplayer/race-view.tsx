@@ -6,15 +6,16 @@ import { useSettings } from "@/components/settings-context"
 import { WordItem } from "@/components/word-item"
 import { useMultiplayerTyping } from "@/hooks/use-multiplayer-typing"
 import { useMultiplayer } from "./multiplayer-provider"
-import { useSocket } from "@/components/multiplayer/socket-provider"
 import { RaceTrack } from "@/components/multiplayer/race-track"
 
 export function RaceView({ spectator = false }: { spectator?: boolean }) {
   const reduceMotion = useReducedMotion()
   const { fontCssFamily } = useSettings()
-  const { socket } = useSocket()
-  const { roomState, raceText, raceStartedAt, timeRemaining, isRacing, sendProgress, sendFinished } = useMultiplayer()
-  const typing = useMultiplayerTyping(raceText, spectator ? null : raceStartedAt)
+  const { roomState, raceText, raceStartedAt, timeRemaining, isRacing, sendProgress, sendFinished, myPlayerId, resumeProgress } = useMultiplayer()
+  const resumeIndex = spectator || resumeProgress == null || raceText.length === 0
+    ? null
+    : Math.min(raceText.length - 1, Math.max(0, Math.floor((resumeProgress / 100) * raceText.length)))
+  const typing = useMultiplayerTyping(raceText, spectator ? null : raceStartedAt, resumeIndex)
   const latest = useRef({ wpm: typing.wpm, progress: typing.progress })
   const sentFinish = useRef<number | null>(null)
   latest.current = { wpm: typing.wpm, progress: typing.progress }
@@ -33,7 +34,7 @@ export function RaceView({ spectator = false }: { spectator?: boolean }) {
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-site flex-col gap-5 px-6 pt-5 pb-10">
-      <RaceTrack players={roomState?.players ?? []} currentPlayerId={socket.id} />
+      <RaceTrack players={roomState?.players ?? []} currentPlayerId={myPlayerId ?? undefined} />
       {spectator ? (
         <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-border/80 p-10 text-center">
           <div><p className="font-semibold">You&apos;re watching this race</p><p className="mt-1 text-sm text-muted-foreground">You can join the next round when the race ends.</p></div>

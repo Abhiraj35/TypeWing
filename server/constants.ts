@@ -3,6 +3,7 @@ export const MAX_POSSIBLE_WPM = 250
 export const COUNTDOWN_MS = 3000
 export const STALE_ROOM_MINUTES = 30
 export const FINISHED_ROOM_CLEANUP_MS = 5 * 60 * 1000
+export const SEAT_GRACE_MS = 15_000
 export const DEFAULT_WORD_COUNT = 30
 export const DEFAULT_MAX_PLAYERS = 8
 export const DEFAULT_TIME_LIMIT = 90
