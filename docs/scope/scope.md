@@ -46,9 +46,9 @@ code in `server/`, `app/race/`, `components/multiplayer/`, `shared/types.ts`
 
 **Build plan** (from 0001):
 - [ ] Build it: /develop multiplayer racing
-  - [ ] Milestone 1: Seat identity and the resume thread (token issue, room:resume, replay, playerId based identity, connection states on the track), covers AC-1 and AC-5
-  - [ ] Milestone 2: Grace, drop, and edge policies (15 second grace and DNF scoring, race to the timer, host migration, rematch cleanup, resume limits and kick), covers AC-2, AC-3, AC-6
-  - [ ] Milestone 3: UI polish and operations (connection banner, invite and lobby polish, results polish, 50 racer load check), covers AC-4 and AC-6
+  - [x] Milestone 1: Seat identity and the resume thread (token issue, room:resume, replay, playerId based identity, connection states on the track), covers AC-1 and AC-5
+  - [x] Milestone 2: Grace, drop, and edge policies (15 second grace and DNF scoring, race to the timer, host migration, rematch cleanup, resume limits and kick), covers AC-2, AC-3, AC-6
+  - [x] Milestone 3: UI polish and operations (connection banner, invite and lobby polish, results polish, 50 racer load check), covers AC-4 and AC-6
 - [ ] Verify it: /check verify multiplayer racing
 - [ ] Test it: /test multiplayer racing
 
