@@ -154,6 +154,15 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       if (pendingResumeRef.current && !message.includes("Too many requests")) {
         clearSeat(pendingResumeRef.current)
         pendingResumeRef.current = null
+        roomIdRef.current = null
+        setMyPlayerId(null)
+        setResumeProgress(null)
+        setRoomId(null)
+        setRoomState(null)
+        setIsRacing(false)
+        setRaceStartedAt(null)
+        setRaceEndsAt(null)
+        setCountdown(null)
       }
       setError(message)
       window.setTimeout(() => setError(null), 5000)
