@@ -4,11 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, ArrowRight, WarningCircle, WifiHigh } from "@phosphor-icons/react"
 import { CountdownOverlay } from "@/components/multiplayer/countdown-overlay"
+import { ConnectionBanner } from "@/components/multiplayer/connection-banner"
 import { RaceResults } from "@/components/multiplayer/race-results"
 import { RaceView } from "@/components/multiplayer/race-view"
 import { RoomLobby } from "@/components/multiplayer/room-lobby"
 import { useMultiplayer } from "@/components/multiplayer/multiplayer-provider"
-import { useSocket } from "@/components/multiplayer/socket-provider"
 import { useSettings } from "@/components/settings-context"
 import { Button } from "@/components/motion/button/base"
 import { Input } from "@/components/motion/input"
@@ -17,8 +17,7 @@ export function RaceRoomClient({ code: rawCode }: { code: string }) {
   const code = rawCode.toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 6)
   const formattedCode = code.length > 3 ? `${code.slice(0, 3)}-${code.slice(3)}` : code
 
-  const { roomState, countdown, raceText, finalLeaderboard, error, joinRoom } = useMultiplayer()
-  const { socket, connected } = useSocket()
+  const { roomState, countdown, raceText, finalLeaderboard, error, connected, myPlayerId, joinRoom } = useMultiplayer()
   const { fontCssFamily } = useSettings()
 
   const [username, setUsername] = useState("")
@@ -30,7 +29,7 @@ export function RaceRoomClient({ code: rawCode }: { code: string }) {
   }, [error])
 
   const matchingRoom = roomState?.roomId === code ? roomState : null
-  const isSpectator = matchingRoom?.players.find((player) => player.id === socket.id)?.spectator ?? false
+  const isSpectator = matchingRoom?.players.find((player) => player.playerId === myPlayerId)?.spectator ?? false
 
   const isNameValid = username.trim().length >= 2
   const isCodeValid = code.length === 6
@@ -49,7 +48,9 @@ export function RaceRoomClient({ code: rawCode }: { code: string }) {
 
   if (!matchingRoom) {
     return (
-      <main
+      <>
+        <ConnectionBanner />
+        <main
         className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-site items-center justify-center px-4 py-8 sm:px-6 lg:px-8"
         style={{ fontFamily: fontCssFamily }}
       >
@@ -139,13 +140,15 @@ export function RaceRoomClient({ code: rawCode }: { code: string }) {
             <span>{connected ? "Server connected" : "Connecting to race server..."}</span>
           </footer>
         </div>
-      </main>
+        </main>
+      </>
     )
   }
 
   if (countdown !== null) {
     return (
       <>
+        <ConnectionBanner />
         <CountdownOverlay count={countdown} words={raceText} />
         <RaceView spectator={isSpectator} />
       </>
@@ -153,12 +156,27 @@ export function RaceRoomClient({ code: rawCode }: { code: string }) {
   }
 
   if (matchingRoom.status === "waiting") {
-    return <RoomLobby room={matchingRoom} />
+    return (
+      <>
+        <ConnectionBanner />
+        <RoomLobby room={matchingRoom} />
+      </>
+    )
   }
 
   if (matchingRoom.status === "finished") {
-    return <RaceResults players={finalLeaderboard ?? matchingRoom.players} />
+    return (
+      <>
+        <ConnectionBanner />
+        <RaceResults players={finalLeaderboard ?? matchingRoom.players} />
+      </>
+    )
   }
 
-  return <RaceView spectator={isSpectator} />
+  return (
+    <>
+      <ConnectionBanner />
+      <RaceView spectator={isSpectator} />
+    </>
+  )
 }

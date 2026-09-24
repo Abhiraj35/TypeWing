@@ -1,5 +1,6 @@
 import { customAlphabet } from "nanoid"
-import type { Player, RoomConfig, RoomState, RoomStatus } from "@shared/types"
+import { randomBytes } from "node:crypto"
+import type { ConnectionState, Player, RoomConfig, RoomState, RoomStatus } from "@shared/types"
 import {
   DEFAULT_MAX_PLAYERS,
   DEFAULT_TIME_LIMIT,
@@ -13,7 +14,13 @@ import {
 } from "./constants"
 
 export interface InternalPlayer {
+  playerId: string
   name: string
+  resumeToken: string
+  socketId: string | null
+  connectionState: ConnectionState
+  seatExpiresAt: number | null
+  seatExpiryTimer: ReturnType<typeof setTimeout> | null
   wpm: number
   progress: number
   finishTime: number | null
@@ -40,6 +47,16 @@ export interface Room {
 
 const rooms = new Map<string, Room>()
 const roomCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 6)
+
+/** Server issued seat identity; survives socket churn. */
+export function newPlayerId(): string {
+  return randomBytes(9).toString("hex")
+}
+
+/** Secret seat recovery token. Leaves the server exactly once, to the owning socket. */
+export function newResumeToken(): string {
+  return randomBytes(32).toString("base64url")
+}
 
 export function normalizeConfig(input: Partial<RoomConfig> | null | undefined): RoomConfig {
   const nearest = (value: unknown, options: readonly number[], fallback: number) => {
@@ -80,22 +97,45 @@ function newRoomId(): string {
   return id
 }
 
-export function createRoom(hostId: string, hostName: string, inputConfig: Partial<RoomConfig> | undefined, ip: string): Room | null {
+function seat(
+  playerId: string,
+  socketId: string,
+  name: string,
+  resumeToken: string,
+  spectator: boolean,
+): InternalPlayer {
+  return {
+    playerId,
+    name,
+    resumeToken,
+    socketId,
+    connectionState: "connected",
+    seatExpiresAt: null,
+    seatExpiryTimer: null,
+    wpm: 0,
+    progress: 0,
+    finishTime: null,
+    rank: null,
+    spectator,
+  }
+}
+
+export function createRoom(
+  socketId: string,
+  hostName: string,
+  inputConfig: Partial<RoomConfig> | undefined,
+  ip: string,
+): { room: Room; playerId: string; resumeToken: string } | null {
   const activeRoomsFromIp = [...rooms.values()].filter((room) => room.createdByIp === ip).length
   if (activeRoomsFromIp >= MAX_ROOMS_PER_IP) return null
 
+  const playerId = newPlayerId()
+  const resumeToken = newResumeToken()
   const room: Room = {
     id: newRoomId(),
-    hostId,
+    hostId: playerId,
     status: "waiting",
-    players: new Map([[hostId, {
-      name: validateUsername(hostName)!,
-      wpm: 0,
-      progress: 0,
-      finishTime: null,
-      rank: null,
-      spectator: false,
-    }]]),
+    players: new Map([[playerId, seat(playerId, socketId, validateUsername(hostName)!, resumeToken, false)]]),
     config: normalizeConfig(inputConfig),
     text: null,
     countdownStartAt: null,
@@ -108,42 +148,126 @@ export function createRoom(hostId: string, hostName: string, inputConfig: Partia
     rematchVotes: new Set(),
   }
   rooms.set(room.id, room)
-  return room
+  return { room, playerId, resumeToken }
 }
 
 export function getRoom(roomId: string): Room | undefined {
   return rooms.get(roomId.toUpperCase())
 }
 
-export function joinRoom(roomId: string, socketId: string, username: string): { room: Room; spectator: boolean } | null {
+export function joinRoom(
+  roomId: string,
+  socketId: string,
+  username: string,
+): { room: Room; playerId: string; resumeToken: string; spectator: boolean } | null {
   const room = getRoom(roomId)
   if (!room || room.status === "finished") return null
-  const activePlayers = [...room.players.values()].filter((player) => !player.spectator).length
   const spectator = room.status !== "waiting"
-  if (room.players.size >= room.config.maxPlayers) return null
+  // Held seats (connected or in grace) count toward maxPlayers so a room
+  // cannot silently overfill while someone is reconnecting.
+  const heldSeats = [...room.players.values()].filter((player) => player.connectionState !== "dropped").length
+  if (heldSeats >= room.config.maxPlayers) return null
+  const activePlayers = [...room.players.values()].filter(
+    (player) => !player.spectator && player.connectionState !== "dropped",
+  ).length
   if (!spectator && activePlayers >= room.config.maxPlayers) return null
   const name = uniqueName(room, username)
-  room.players.set(socketId, { name, wpm: 0, progress: 0, finishTime: null, rank: null, spectator })
-  return { room, spectator }
+  const playerId = newPlayerId()
+  const resumeToken = newResumeToken()
+  room.players.set(playerId, seat(playerId, socketId, name, resumeToken, spectator))
+  return { room, playerId, resumeToken, spectator }
 }
 
-export function findRoomForPlayer(socketId: string): Room | undefined {
-  for (const room of rooms.values()) if (room.players.has(socketId)) return room
+export function findPlayerBySocketId(room: Room, socketId: string): InternalPlayer | undefined {
+  for (const player of room.players.values()) if (player.socketId === socketId) return player
   return undefined
 }
 
-export function removePlayer(socketId: string): { room: Room; wasHost: boolean } | null {
+export function findSeatByToken(room: Room, resumeToken: string): InternalPlayer | undefined {
+  for (const player of room.players.values()) if (player.resumeToken === resumeToken) return player
+  return undefined
+}
+
+export function findRoomForPlayer(socketId: string): Room | undefined {
+  for (const room of rooms.values()) {
+    for (const player of room.players.values()) {
+      if (player.socketId === socketId) return room
+    }
+  }
+  return undefined
+}
+
+export function clearSeatExpiry(player: InternalPlayer): void {
+  if (player.seatExpiryTimer) {
+    clearTimeout(player.seatExpiryTimer)
+    player.seatExpiryTimer = null
+  }
+}
+
+/**
+ * Marks a seat reconnecting and schedules its grace window. The expiry timer
+ * is a no-op when the seat or room is already gone (resumed, dropped, or the
+ * room was removed), and it is unref'd so the process can still exit.
+ */
+export function scheduleSeatExpiry(
+  room: Room,
+  player: InternalPlayer,
+  graceMs: number,
+  onExpired: (room: Room, player: InternalPlayer) => void,
+): void {
+  if (player.seatExpiryTimer) clearTimeout(player.seatExpiryTimer)
+  player.seatExpiryTimer = setTimeout(() => {
+    player.seatExpiryTimer = null
+    if (!rooms.has(room.id)) return
+    const seatInRoom = room.players.get(player.playerId)
+    if (!seatInRoom || seatInRoom !== player) return
+    if (seatInRoom.connectionState !== "reconnecting") return
+    seatInRoom.connectionState = "dropped"
+    seatInRoom.seatExpiresAt = null
+    seatInRoom.socketId = null
+    onExpired(room, seatInRoom)
+  }, graceMs)
+  player.seatExpiryTimer.unref?.()
+}
+
+export function seatDisconnected(
+  socketId: string,
+  graceMs: number,
+  onSeatExpired: (room: Room, player: InternalPlayer) => void,
+): { room: Room; player: InternalPlayer } | null {
   const room = findRoomForPlayer(socketId)
   if (!room) return null
-  const wasHost = room.hostId === socketId
-  room.players.delete(socketId)
-  if (room.players.size === 0) {
-    clearRoomTimers(room)
-    rooms.delete(room.id)
-    return { room, wasHost }
-  }
-  if (wasHost) room.hostId = room.players.keys().next().value as string
-  return { room, wasHost }
+  const player = findPlayerBySocketId(room, socketId)
+  if (!player || player.connectionState === "dropped") return null
+  player.socketId = null
+  player.connectionState = "reconnecting"
+  player.seatExpiresAt = Date.now() + graceMs
+  scheduleSeatExpiry(room, player, graceMs, onSeatExpired)
+  return { room, player }
+}
+
+/** Host migration prefers a connected racer, then any connected seat, then a seat still in grace. */
+export function migrateHost(room: Room): boolean {
+  const seated = [...room.players.values()]
+  const connected = seated.filter((player) => player.connectionState === "connected")
+  const next =
+    connected.find((player) => !player.spectator) ??
+    connected[0] ??
+    seated.find((player) => player.connectionState === "reconnecting" && !player.spectator) ??
+    seated.find((player) => player.connectionState === "reconnecting") ??
+    null
+  if (!next) return false
+  room.hostId = next.playerId
+  return true
+}
+
+/** True when no seat is connected or in grace; such a room is dead and is removed. */
+export function removeIfAbandoned(room: Room): boolean {
+  const hasOccupants = [...room.players.values()].some((player) => player.connectionState !== "dropped")
+  if (hasOccupants) return false
+  clearRoomTimers(room)
+  rooms.delete(room.id)
+  return true
 }
 
 export function clearRoomTimers(room: Room): void {
@@ -168,6 +292,14 @@ export function scheduleFinishedCleanup(room: Room, onCleanup: () => void): void
 
 export function resetForRematch(room: Room): void {
   clearRoomTimers(room)
+  // Dropped seats are terminal for the race and are removed at rematch reset.
+  for (const [playerId, player] of [...room.players]) {
+    if (player.connectionState === "dropped") {
+      clearSeatExpiry(player)
+      room.players.delete(playerId)
+    }
+  }
+  if (!room.players.has(room.hostId)) migrateHost(room)
   room.status = "waiting"
   room.text = null
   room.countdownStartAt = null
@@ -190,7 +322,18 @@ export function buildLeaderboard(room: Room): Player[] {
       if (b.progress !== a.progress) return b.progress - a.progress
       return b.wpm - a.wpm
     })
-    .map(([id, player]) => ({ id, ...player }))
+    // Whitelist on purpose: resumeToken and socketId must never reach the wire.
+    .map(([, player]) => ({
+      playerId: player.playerId,
+      name: player.name,
+      wpm: player.wpm,
+      progress: player.progress,
+      finishTime: player.finishTime,
+      rank: player.rank,
+      spectator: player.spectator,
+      connectionState: player.connectionState,
+      seatExpiresAt: player.seatExpiresAt,
+    }))
 }
 
 export function serializeRoom(room: Room): RoomState {

@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import type { Player, RoomConfig, RoomState } from "@shared/types"
+import type { ConnectionState, Player, RoomConfig, RoomState } from "@shared/types"
+import { clearSeat, getSeat, storeSeat } from "@/lib/resume-storage"
 import { useSocket } from "@/components/multiplayer/socket-provider"
 
 interface MultiplayerContextValue {
@@ -17,6 +18,8 @@ interface MultiplayerContextValue {
   lastRaceStartedAt: number | null
   finalLeaderboard: Player[] | null
   rematchVotes: { votes: number; needed: number } | null
+  myPlayerId: string | null
+  resumeProgress: number | null
   error: string | null
   createRoom: (username: string, config: RoomConfig) => void
   joinRoom: (roomId: string, username: string) => void
@@ -44,21 +47,47 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   const [lastRaceStartedAt, setLastRaceStartedAt] = useState<number | null>(null)
   const [finalLeaderboard, setFinalLeaderboard] = useState<Player[] | null>(null)
   const [rematchVotes, setRematchVotes] = useState<{ votes: number; needed: number } | null>(null)
+  const [myPlayerId, setMyPlayerId] = useState<string | null>(null)
+  const [resumeProgress, setResumeProgress] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
+  const roomIdRef = useRef<string | null>(null)
+  const pendingResumeRef = useRef<string | null>(null)
+  const boundRoomRef = useRef<string | null>(null)
 
   useEffect(() => {
     const onCreated = ({ roomId: createdRoomId }: { roomId: string }) => {
+      roomIdRef.current = createdRoomId
       setRoomId(createdRoomId)
       router.push(`/race/${createdRoomId}`)
     }
     const onState = (state: RoomState) => {
+      roomIdRef.current = state.roomId
       setRoomId(state.roomId)
       setRoomState(state)
+      if (pendingResumeRef.current === state.roomId) pendingResumeRef.current = null
       if (pathname === "/race") router.push(`/race/${state.roomId}`)
     }
     const onNewHost = ({ hostId }: { hostId: string }) => {
       setRoomState((previous) => previous ? { ...previous, hostId } : previous)
+    }
+    const onSeat = ({ playerId, resumeToken }: { playerId: string; resumeToken: string }) => {
+      setMyPlayerId(playerId)
+      setResumeProgress(null)
+      const roomCode = roomIdRef.current
+      boundRoomRef.current = roomCode
+      if (roomCode) storeSeat(roomCode, { playerId, resumeToken })
+    }
+    const onSeatResumed = ({ playerId, progress }: { playerId: string; progress: number }) => {
+      setMyPlayerId(playerId)
+      setResumeProgress(progress)
+      boundRoomRef.current = pendingResumeRef.current
+    }
+    const onPlayerConnection = ({ playerId, connectionState }: { playerId: string; connectionState: ConnectionState }) => {
+      setRoomState((previous) => previous ? {
+        ...previous,
+        players: previous.players.map((player) => player.playerId === playerId ? { ...player, connectionState } : player),
+      } : previous)
     }
     const onCountdown = ({ text, startAt }: { text: string[]; startAt: number }) => {
       if (countdownTimerRef.current !== null) window.clearInterval(countdownTimerRef.current)
@@ -93,7 +122,7 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
     const onRanked = ({ playerId, rank }: { playerId: string; rank: number }) => {
       setRoomState((previous) => previous ? {
         ...previous,
-        players: previous.players.map((player) => player.id === playerId ? { ...player, rank } : player),
+        players: previous.players.map((player) => player.playerId === playerId ? { ...player, rank } : player),
       } : previous)
     }
     const onEnd = ({ finalLeaderboard: leaderboard }: { finalLeaderboard: Player[] }) => {
@@ -119,29 +148,36 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       setRaceStartedAt(null)
       setRaceEndsAt(null)
       setTimeRemaining(null)
+      setResumeProgress(null)
     }
     const onError = (message: string) => {
+      if (pendingResumeRef.current && !message.includes("Too many requests")) {
+        clearSeat(pendingResumeRef.current)
+        pendingResumeRef.current = null
+        roomIdRef.current = null
+        setMyPlayerId(null)
+        setResumeProgress(null)
+        setRoomId(null)
+        setRoomState(null)
+        setIsRacing(false)
+        setRaceStartedAt(null)
+        setRaceEndsAt(null)
+        setCountdown(null)
+      }
       setError(message)
       window.setTimeout(() => setError(null), 5000)
     }
     const onDisconnect = () => {
-      if (countdownTimerRef.current !== null) window.clearInterval(countdownTimerRef.current)
-      countdownTimerRef.current = null
-      setRoomId(null)
-      setRoomState(null)
-      setCountdown(null)
-      setRaceText([])
-      setIsRacing(false)
-      setRaceStartedAt(null)
-      setRaceEndsAt(null)
-      setTimeRemaining(null)
-      setFinalLeaderboard(null)
-      setRematchVotes(null)
+      // The seat is held server side for the grace window and resumes by token
+      // on the next connect, so local state is kept for an in-place resume.
     }
 
     socket.on("room:created", onCreated)
     socket.on("room:state", onState)
     socket.on("room:newHost", onNewHost)
+    socket.on("player:seat", onSeat)
+    socket.on("player:seatResumed", onSeatResumed)
+    socket.on("player:connection", onPlayerConnection)
     socket.on("game:countdown", onCountdown)
     socket.on("game:go", onGo)
     socket.on("leaderboard:update", onLeaderboard)
@@ -155,6 +191,9 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       socket.off("room:created", onCreated)
       socket.off("room:state", onState)
       socket.off("room:newHost", onNewHost)
+      socket.off("player:seat", onSeat)
+      socket.off("player:seatResumed", onSeatResumed)
+      socket.off("player:connection", onPlayerConnection)
       socket.off("game:countdown", onCountdown)
       socket.off("game:go", onGo)
       socket.off("leaderboard:update", onLeaderboard)
@@ -166,6 +205,24 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       socket.off("disconnect", onDisconnect)
     }
   }, [pathname, router, socket])
+
+  // On a transport drop, the seat identity still applies to the next socket:
+  // clear the bound marker so the next connect emits room:resume again.
+  useEffect(() => {
+    if (!connected) boundRoomRef.current = null
+  }, [connected])
+
+  useEffect(() => {
+    if (!connected) return
+    const match = /^\/race\/([A-Z2-9]{6})$/i.exec(pathname)
+    if (!match) return
+    const code = match[1].toUpperCase()
+    if (boundRoomRef.current === code) return
+    const stored = getSeat(code)
+    if (!stored) return
+    pendingResumeRef.current = code
+    socket.emit("room:resume", { roomId: code, resumeToken: stored.resumeToken })
+  }, [connected, pathname, socket])
 
   useEffect(() => {
     if (!isRacing || !raceEndsAt) return
@@ -180,6 +237,7 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   }, [socket])
   const joinRoom = useCallback((requestedRoomId: string, username: string) => {
     const normalizedRoomId = requestedRoomId.trim().toUpperCase()
+    roomIdRef.current = normalizedRoomId
     setRoomId(normalizedRoomId)
     socket.emit("room:join", { roomId: normalizedRoomId, username })
   }, [socket])
@@ -196,6 +254,13 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
     if (roomId) socket.emit("game:rematchRequest", { roomId })
   }, [roomId, socket])
   const leaveRoom = useCallback(() => {
+    const code = roomIdRef.current
+    if (code) clearSeat(code)
+    roomIdRef.current = null
+    pendingResumeRef.current = null
+    boundRoomRef.current = null
+    setMyPlayerId(null)
+    setResumeProgress(null)
     setRoomId(null)
     setRoomState(null)
     setCountdown(null)
@@ -213,8 +278,8 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
 
   const value = useMemo(() => ({
     connected, roomId, roomState, countdown, raceText, isRacing, raceStartedAt, timeRemaining, lastRaceStartedAt, finalLeaderboard,
-    rematchVotes, error, createRoom, joinRoom, startGame, sendProgress, sendFinished, requestRematch, leaveRoom,
-  }), [connected, roomId, roomState, countdown, raceText, isRacing, raceStartedAt, timeRemaining, lastRaceStartedAt, finalLeaderboard, rematchVotes, error,
+    rematchVotes, myPlayerId, resumeProgress, error, createRoom, joinRoom, startGame, sendProgress, sendFinished, requestRematch, leaveRoom,
+  }), [connected, roomId, roomState, countdown, raceText, isRacing, raceStartedAt, timeRemaining, lastRaceStartedAt, finalLeaderboard, rematchVotes, myPlayerId, resumeProgress, error,
     createRoom, joinRoom, startGame, sendProgress, sendFinished, requestRematch, leaveRoom])
 
   return <MultiplayerContext.Provider value={value}>{children}</MultiplayerContext.Provider>

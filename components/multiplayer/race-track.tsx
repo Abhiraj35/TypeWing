@@ -13,7 +13,7 @@ export function RaceTrack({ players, currentPlayerId }: { players: Player[]; cur
   // the race ends (RaceResults).
   const ranked = racers.map((player, index) => ({ player, rank: index + 1 }))
   const podium = ranked.slice(0, 3)
-  const you = ranked.find((entry) => entry.player.id === currentPlayerId && entry.rank > 3)
+  const you = ranked.find((entry) => entry.player.playerId === currentPlayerId && entry.rank > 3)
   const hiddenCount = ranked.length - podium.length - (you ? 1 : 0)
 
   return (
@@ -28,7 +28,7 @@ export function RaceTrack({ players, currentPlayerId }: { players: Player[]; cur
 
       <div className="space-y-3">
         {podium.map(({ player, rank }) => (
-          <StandingRow key={player.id} player={player} rank={rank} isYou={player.id === currentPlayerId} />
+          <StandingRow key={player.playerId} player={player} rank={rank} isYou={player.playerId === currentPlayerId} />
         ))}
 
         {you && (
@@ -57,8 +57,18 @@ export function RaceTrack({ players, currentPlayerId }: { players: Player[]; cur
 }
 
 function StandingRow({ player, rank, isYou }: { player: Player; rank: number; isYou: boolean }) {
+  const stateDot = player.connectionState === "connected"
+    ? "bg-emerald-500"
+    : player.connectionState === "reconnecting"
+      ? "bg-amber-500"
+      : "bg-muted-foreground/40"
+  const stateLabel = player.connectionState === "reconnecting"
+    ? "reconnecting"
+    : player.connectionState === "dropped"
+      ? "dropped"
+      : null
   return (
-    <div className={cn("rounded-xl px-2 py-1.5", isYou && "bg-primary/5")}>
+    <div className={cn("rounded-xl px-2 py-1.5", isYou && "bg-primary/5", player.connectionState === "dropped" && "opacity-70")}>
       <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
         <span className="flex min-w-0 items-baseline gap-2.5">
           <span
@@ -72,12 +82,29 @@ function StandingRow({ player, rank, isYou }: { player: Player; rank: number; is
           <span className="min-w-0 truncate font-medium">
             {player.name}
             {isYou && <span className="ml-1.5 text-xs text-primary">you</span>}
+            {stateLabel && (
+              <span
+                className={cn(
+                  "ml-1.5 text-[11px] font-semibold uppercase tracking-wider",
+                  player.connectionState === "reconnecting" ? "text-amber-500" : "text-muted-foreground",
+                )}
+              >
+                {stateLabel}
+              </span>
+            )}
           </span>
         </span>
-        <span className="shrink-0 font-mono text-xs text-muted-foreground">{player.wpm} wpm · {player.progress}%</span>
+        <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-muted-foreground">
+          <span className={cn("h-1.5 w-1.5 rounded-full", stateDot)} />
+          {player.wpm} wpm · {player.progress}%
+        </span>
       </div>
       <div className="ml-6 h-2 overflow-hidden rounded-full bg-muted">
-        <motion.div className="h-full rounded-full bg-primary" animate={{ width: `${player.progress}%` }} transition={{ duration: 0.25 }} />
+        <motion.div
+          className={cn("h-full rounded-full", player.connectionState === "dropped" ? "bg-muted-foreground/50" : "bg-primary")}
+          animate={{ width: `${player.progress}%` }}
+          transition={{ duration: 0.25 }}
+        />
       </div>
     </div>
   )

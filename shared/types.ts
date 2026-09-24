@@ -1,11 +1,15 @@
+export type ConnectionState = "connected" | "reconnecting" | "dropped"
+
 export interface Player {
-  id: string
+  playerId: string
   name: string
   wpm: number
   progress: number
   finishTime: number | null
   rank: number | null
   spectator: boolean
+  connectionState: ConnectionState
+  seatExpiresAt: number | null
 }
 
 export interface RoomConfig {
@@ -27,6 +31,7 @@ export interface RoomState {
 export interface ClientToServerEvents {
   "room:create": (data: { username: string; config: RoomConfig }) => void
   "room:join": (data: { roomId: string; username: string }) => void
+  "room:resume": (data: { roomId: string; resumeToken: string }) => void
   "game:startRequest": (data: { roomId: string }) => void
   "player:progress": (data: { roomId: string; wpm: number; progress: number }) => void
   "player:finished": (data: { roomId: string; finalWpm: number }) => void
@@ -37,6 +42,9 @@ export interface ServerToClientEvents {
   "room:created": (data: { roomId: string }) => void
   "room:state": (data: RoomState) => void
   "room:newHost": (data: { hostId: string }) => void
+  "player:seat": (data: { playerId: string; resumeToken: string }) => void
+  "player:seatResumed": (data: { playerId: string; progress: number; wpm: number }) => void
+  "player:connection": (data: { playerId: string; connectionState: ConnectionState }) => void
   "game:countdown": (data: { text: string[]; startAt: number }) => void
   "game:go": (data: { startAt: number; endsAt: number }) => void
   "leaderboard:update": (data: { players: Player[] }) => void

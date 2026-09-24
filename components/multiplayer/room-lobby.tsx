@@ -1,35 +1,129 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Copy, Play, SignOut, UsersThree } from "@phosphor-icons/react"
+import { Check, Copy, LinkSimple, Play, SignOut, UsersThree } from "@phosphor-icons/react"
 import type { RoomState } from "@shared/types"
 import { useMultiplayer } from "./multiplayer-provider"
-import { useSocket } from "@/components/multiplayer/socket-provider"
+import { cn } from "@/lib/utils"
 
 export function RoomLobby({ room }: { room: RoomState }) {
-  const { socket } = useSocket()
-  const { startGame, leaveRoom } = useMultiplayer()
-  const [copied, setCopied] = useState(false)
-  const isHost = room.hostId === socket.id
+  const { myPlayerId, startGame, leaveRoom } = useMultiplayer()
+  const [copied, setCopied] = useState<"code" | "link" | null>(null)
+  const isHost = room.hostId === myPlayerId
   const activePlayers = room.players.filter((player) => !player.spectator)
-  const copyCode = async () => {
+  const reconnecting = room.players.filter((player) => player.connectionState === "reconnecting")
+
+  const copyText = async (value: string, kind: "code" | "link") => {
     if (!navigator.clipboard?.writeText) return
     try {
-      await navigator.clipboard.writeText(room.roomId)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
+      await navigator.clipboard.writeText(value)
+      setCopied(kind)
+      window.setTimeout(() => setCopied(null), 1500)
     } catch {
-      setCopied(false)
+      setCopied(null)
     }
   }
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-site flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
       <div className="w-full max-w-2xl rounded-3xl border border-border/70 bg-card/75 p-5 shadow-xl shadow-primary/5 sm:p-9">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Waiting room</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Ready when you are.</h1><p className="mt-2 text-sm text-muted-foreground">Share the code, then start the race when everyone has joined.</p></div><div className="flex items-center gap-2 self-start"><button type="button" onClick={copyCode} className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm font-semibold tracking-[0.2em] transition-colors hover:bg-muted" aria-label="Copy room code">{room.roomId}<span className="ml-1 tracking-normal text-muted-foreground">{copied ? <Check size={15} /> : <Copy size={15} />}</span></button><button type="button" onClick={leaveRoom} className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Leave room" title="Leave room"><SignOut size={15} /></button></div></div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-3"><Info label="Words" value={String(room.config.wordCount)} /><Info label="Players" value={`${activePlayers.length}/${room.config.maxPlayers}`} /><Info label="Time limit" value={`${room.config.timeLimit}s`} /></div>
-        <div className="mt-8"><div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Players</h2><span className="text-xs text-muted-foreground">{room.players.length} connected</span></div><div className="space-y-2">{room.players.map((player) => <div key={player.id} className="flex items-center justify-between rounded-xl border border-border/60 bg-background/60 px-4 py-3"><span className="flex items-center gap-2 text-sm font-medium"><span className="h-2 w-2 rounded-full bg-emerald-500" />{player.name}{player.id === room.hostId && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">host</span>}</span>{player.spectator && <span className="text-xs text-muted-foreground">watching</span>}</div>)}</div></div>
-        {isHost ? <button type="button" onClick={startGame} disabled={activePlayers.length < 2} className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"><Play size={16} weight="fill" />{activePlayers.length < 2 ? "Waiting for another player" : "Start race"}</button> : <div className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-muted/60 px-4 py-3 text-sm text-muted-foreground"><UsersThree size={17} />Waiting for the host to start</div>}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Waiting room</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight">Ready when you are.</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {isHost ? "Share the invite, then start the race when everyone has joined." : "Waiting for the host to start the race."}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-start">
+            <button
+              type="button"
+              onClick={() => copyText(room.roomId, "code")}
+              className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm font-semibold tracking-[0.2em] transition-colors hover:bg-muted"
+              aria-label="Copy room code"
+            >
+              {room.roomId}
+              <span className="ml-1 tracking-normal text-muted-foreground">{copied === "code" ? <Check size={15} /> : <Copy size={15} />}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => copyText(window.location.href, "link")}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Copy invite link"
+              title="Copy invite link"
+            >
+              {copied === "link" ? <Check size={15} /> : <LinkSimple size={15} />}
+            </button>
+            <button
+              type="button"
+              onClick={leaveRoom}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Leave room"
+              title="Leave room"
+            >
+              <SignOut size={15} />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <Info label="Words" value={String(room.config.wordCount)} />
+          <Info label="Players" value={`${activePlayers.length}/${room.config.maxPlayers}`} />
+          <Info label="Time limit" value={`${room.config.timeLimit}s`} />
+        </div>
+
+        <div className="mt-8">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-semibold">Players</h2>
+            <span className="text-xs text-muted-foreground">
+              {room.players.length} in room
+              {reconnecting.length > 0 && <span className="ml-1 text-amber-500">· {reconnecting.length} reconnecting</span>}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {room.players.map((player) => (
+              <div
+                key={player.playerId}
+                className="flex items-center justify-between rounded-xl border border-border/60 bg-background/60 px-4 py-3"
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      player.connectionState === "connected" ? "bg-emerald-500" : "bg-amber-500",
+                    )}
+                  />
+                  {player.name}
+                  {player.playerId === room.hostId && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">host</span>
+                  )}
+                </span>
+                {player.spectator ? (
+                  <span className="text-xs text-muted-foreground">watching</span>
+                ) : player.connectionState === "reconnecting" ? (
+                  <span className="text-xs text-amber-500">reconnecting</span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {isHost ? (
+          <button
+            type="button"
+            onClick={startGame}
+            disabled={activePlayers.length < 2}
+            className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Play size={16} weight="fill" />
+            {activePlayers.length < 2 ? "Waiting for another player" : "Start race"}
+          </button>
+        ) : (
+          <div className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+            <UsersThree size={17} />
+            Waiting for the host to start
+          </div>
+        )}
       </div>
       <p className="mt-4 w-full max-w-2xl px-2 text-center text-xs text-muted-foreground">
         Multiplayer is in beta - races may have rough edges or bugs.{" "}
@@ -46,4 +140,11 @@ export function RoomLobby({ room }: { room: RoomState }) {
   )
 }
 
-function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-border/60 bg-background/50 px-4 py-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 font-mono text-lg font-semibold">{value}</p></div> }
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/50 px-4 py-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-lg font-semibold">{value}</p>
+    </div>
+  )
+}

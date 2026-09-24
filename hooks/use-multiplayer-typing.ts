@@ -4,7 +4,12 @@ import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { accuracyFromCounts, countWpm, wpmNumeratorFromCounts } from "@shared/wpm-count"
 
-export function useMultiplayerTyping(words: string[], startedAt: number | null) {
+/**
+ * resumeIndex re-seats the cursor at the server synced word boundary after a
+ * seat resume, so a refreshed tab continues at or behind the last progress the
+ * server accepted instead of restarting at word zero.
+ */
+export function useMultiplayerTyping(words: string[], startedAt: number | null, resumeIndex: number | null = null) {
   const [typed, setTyped] = useState("")
   const [wordIndex, setWordIndex] = useState(0)
   const [wordInputs, setWordInputs] = useState<string[]>([])
@@ -30,16 +35,18 @@ export function useMultiplayerTyping(words: string[], startedAt: number | null) 
   useEffect(() => {
     if (!startedAt || startedAt === seenStartRef.current || words.length === 0) return
     seenStartRef.current = startedAt
+    const resume = resumeIndex ?? 0
+    const index = Math.max(0, Math.min(words.length - 1, resume))
+    setWordInputs(words.slice(0, index))
+    setWordIndex(index)
     setTyped("")
-    setWordIndex(0)
-    setWordInputs([])
     setFinished(false)
     setStarted(true)
     setElapsedSec(0)
     setRowOffset(0)
     startRef.current = startedAt
     inputRef.current?.focus()
-  }, [startedAt, words.length])
+  }, [startedAt, words, resumeIndex])
 
   useEffect(() => {
     if (!started || finished || !startRef.current) return
