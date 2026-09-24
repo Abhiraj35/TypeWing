@@ -210,7 +210,7 @@ Visit [**http://localhost:3000**](http://localhost:3000) in your browser to star
 | Variable       | Description                                                   | Default |
 | :------------- | :------------------------------------------------------------ | :------ |
 | `PORT`         | Listening port for Express + Socket.IO                        | `3001`  |
-| `FRONTEND_URL` | Allowed origin for CORS (e.g. `https://type-wing.vercel.app`) | `*`     |
+| `FRONTEND_URL` | Allowed origin for CORS (e.g. `https://type-wing.vercel.app`) | `http://localhost:3000` |
 
 ---
 
