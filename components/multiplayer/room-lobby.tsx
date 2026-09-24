@@ -11,7 +11,7 @@ export function RoomLobby({ room }: { room: RoomState }) {
   const [copied, setCopied] = useState<"code" | "link" | null>(null)
   const isHost = room.hostId === myPlayerId
   const activePlayers = room.players.filter((player) => !player.spectator)
-  const reconnecting = room.players.filter((player) => player.connectionState !== "connected")
+  const reconnecting = room.players.filter((player) => player.connectionState === "reconnecting")
 
   const copyText = async (value: string, kind: "code" | "link") => {
     if (!navigator.clipboard?.writeText) return
