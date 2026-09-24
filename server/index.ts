@@ -154,6 +154,14 @@ io.on("connection", (socket) => {
     const player = findSeatByToken(room, resumeToken)
     if (!player) return emitError(socket.id, "This seat could not be resumed.")
     if (player.connectionState === "dropped") return emitError(socket.id, "Your seat expired.")
+
+    const currentRoom = findRoomForPlayer(socket.id)
+    if (currentRoom) {
+      const currentSeat = findPlayerBySocketId(currentRoom, socket.id)
+      if (currentRoom.id !== room.id || currentSeat !== player) {
+        return emitError(socket.id, "You are already in a room.")
+      }
+    }
     if (player.socketId !== socket.id) {
       // A second live resume replaces the older connection and kicks it out
       // of the room so only one socket is bound to the seat.

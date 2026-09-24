@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net"
 import { io as createClient, type Socket } from "socket.io-client"
 import type { ClientToServerEvents, RoomState, ServerToClientEvents } from "@shared/types"
 import { httpServer, io as ioServer } from "./index"
+import { getRoom } from "./room-manager"
 import { SEAT_GRACE_MS } from "./constants"
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>
@@ -177,11 +178,13 @@ describe("multiplayer wire behavior (spec 0001 AC-1..AC-6)", () => {
   it("AC-5: a second live resume kicks the older connection out of the room", async () => {
     world.hostLive = await connect("it-kick")
     const resumedP = onceEvent(world.hostLive, "player:seatResumed")
+    const connectionSilence = expectSilence(world.host, "player:connection")
+    const stateSilence = expectSilence(world.host, "room:state")
     world.hostLive.emit("room:resume", { roomId: world.roomId, resumeToken: world.hostSeat.resumeToken })
     const resumed = await resumedP
     expect(resumed.playerId).toBe(world.hostSeat.playerId)
-    const silenced = await expectSilence(world.host, "room:state")
-    expect(silenced).toBe(true) // old socket stopped receiving broadcasts
+    expect(await connectionSilence).toBe(true)
+    expect(await stateSilence).toBe(true)
   })
 
   it("AC-1: resuming into a racing room replays countdown and go at the race time", async () => {
@@ -224,6 +227,57 @@ describe("multiplayer wire behavior (spec 0001 AC-1..AC-6)", () => {
     expect(errors.filter((message) => message.includes("Too many requests"))).toHaveLength(2)
     expect(errors.filter((message) => message.includes("could not be resumed"))).toHaveLength(6)
     spammer.disconnect()
+  })
+
+  it("AC-1: room:resume is rejected for a socket already seated in another room (no ghost seat)", async () => {
+    const renegade = await connect("it-ghost-a")
+    const createdAP = onceEvent(renegade, "room:created")
+    const seatAP = onceEvent(renegade, "player:seat")
+    renegade.emit("room:create", {
+      username: "AlreadyA",
+      config: { wordCount: 20, maxPlayers: 4, timeLimit: 60 },
+    })
+    const [createdA, seatA] = await Promise.all([createdAP, seatAP])
+
+    const ghostmaker = await connect("it-ghost-b")
+    const createdBP = onceEvent(ghostmaker, "room:created")
+    const seatBP = onceEvent(ghostmaker, "player:seat")
+    ghostmaker.emit("room:create", {
+      username: "GhostB",
+      config: { wordCount: 20, maxPlayers: 4, timeLimit: 60 },
+    })
+    const [createdB, seatB] = await Promise.all([createdBP, seatBP])
+
+    // Put room B's seat into grace so it is a live, unbounded token target.
+    ghostmaker.disconnect()
+    const deadline = Date.now() + 4000
+    let bState = getRoom(createdB.roomId)?.players.get(seatB.playerId)?.connectionState
+    while (bState !== "reconnecting" && Date.now() < deadline) {
+      await sleep(50)
+      bState = getRoom(createdB.roomId)?.players.get(seatB.playerId)?.connectionState
+    }
+    expect(bState).toBe("reconnecting")
+
+    // The renegade socket is already bound to room A; the room B resume must
+    // be rejected instead of stacking a second seat on the same socket.
+    const errors = collectErrors(renegade)
+    const seatResumedSilence = expectSilence(renegade, "player:seatResumed")
+    renegade.emit("room:resume", { roomId: createdB.roomId, resumeToken: seatB.resumeToken })
+    expect(await seatResumedSilence).toBe(true)
+    expect(errors.some((message) => message.includes("already in a room"))).toBe(true)
+
+    // No ghost: once the renegade disconnects, room B's seat is untouched. It
+    // stays in grace with no socketId instead of staying connected with a dead
+    // one, so it still expires, frees its capacity slot, and lets the waiting
+    // room be removed. Room A's own seat does go into grace, proving the
+    // disconnect only ever unbinds the socket's real seat.
+    renegade.disconnect()
+    await sleep(300)
+    const roomBBeforeGrace = getRoom(createdB.roomId)
+    expect(roomBBeforeGrace?.players.get(seatB.playerId)?.connectionState).toBe("reconnecting")
+    expect(roomBBeforeGrace?.players.get(seatB.playerId)?.socketId).toBeNull()
+    expect(roomBBeforeGrace?.players.get(seatB.playerId)?.playerId).toBe(seatB.playerId)
+    expect(getRoom(createdA.roomId)?.players.get(seatA.playerId)?.connectionState).toBe("reconnecting")
   })
 
   it("AC-2/AC-6: a held seat counts toward capacity and frees its slot after grace", async () => {

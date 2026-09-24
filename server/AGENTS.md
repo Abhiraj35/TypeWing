@@ -36,7 +36,7 @@ pnpm test         # vitest: room manager unit + Socket.IO wire integration
 
 - Single instance, in memory: rooms vanish on restart; horizontal scaling needs a socket.io adapter (for example `@socket.io/redis-adapter`) plus persisted state.
 - The Dockerfile installs with `npm install` and runs the server only; the Next.js client deploys separately (Vercel).
-- CORS origin comes from `FRONTEND_URL` (default `http://localhost:3001`); health probe at `/health` for the Railway healthcheck.
+- CORS origin comes from `FRONTEND_URL` (default `http://localhost:3000`, the Next.js client origin); health probe at `/health` for the Railway healthcheck.
 - Timers are `.unref()`d so the process can exit; stale waiting rooms are reaped every 60 seconds.
 
 _Drafted by /audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._
