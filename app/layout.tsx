@@ -11,6 +11,7 @@ import "./globals.css"
 import { AppChrome } from "@/components/app-chrome"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SettingsProvider } from "@/components/settings-context"
+import { PostHogProvider } from "@/components/providers/posthog-provider"
 import { siteConfig } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
@@ -78,11 +79,13 @@ export default function RootLayout({
       )}
     >
       <body suppressHydrationWarning>
-        <ThemeProvider>
-          <SettingsProvider>
-            <AppChrome>{children}</AppChrome>
-          </SettingsProvider>
-        </ThemeProvider>
+        <PostHogProvider>
+          <ThemeProvider>
+            <SettingsProvider>
+              <AppChrome>{children}</AppChrome>
+            </SettingsProvider>
+          </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

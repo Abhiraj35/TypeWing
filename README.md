@@ -64,7 +64,7 @@ Measure your raw WPM and accuracy in solo trials, listen to realistic mechanical
 - **19 Curated Accent Colors** — Teal, Red, Amber, Purple, Green, Rose, Blue, Orange, Cyan, Pink, Indigo, Lime, Violet, Sky, Coral, Mint, Gold, Lavender, and more.
 - **12 Typography Styles** — Monospace (Geist Mono, JetBrains Mono, Fira Code, Space Mono, Roboto Mono, Source Code Pro), Clean Sans (Inter, Poppins, Outfit, Space Grotesk), and Serif (Playfair Display, Caveat).
 - **Dark & Light Modes** — Smooth, flicker-free theme switching built with `next-themes`.
-- **Privacy-First** — No accounts or trackers required. All personal records and visual settings persist securely in `localStorage`.
+- **Privacy-First** — No account is required. Optional PostHog analytics can be enabled through the documented environment variables, while personal records and visual settings persist in `localStorage`.
 
 ---
 
@@ -204,6 +204,9 @@ Visit [**http://localhost:3000**](http://localhost:3000) in your browser to star
 | Variable                 | Description                               | Default                 |
 | :----------------------- | :---------------------------------------- | :---------------------- |
 | `NEXT_PUBLIC_SOCKET_URL` | Base URL of the Socket.IO realtime server | `http://localhost:3001` |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | Optional PostHog project token for web analytics | unset |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Optional PostHog host | `https://eu.i.posthog.com` |
+| `NEXT_PUBLIC_POSTHOG_USE_PROXY` | Route PostHog requests through `/ingest` | `false` |
 
 ### Realtime Server (`server/.env`)
 
@@ -211,6 +214,8 @@ Visit [**http://localhost:3000**](http://localhost:3000) in your browser to star
 | :------------- | :------------------------------------------------------------ | :------ |
 | `PORT`         | Listening port for Express + Socket.IO                        | `3001`  |
 | `FRONTEND_URL` | Allowed origin for CORS (e.g. `https://type-wing.vercel.app`) | `http://localhost:3000` |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | Optional PostHog project token for server logs | unset |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Optional PostHog host for server logs. Must be absolute; the server cannot use the `/ingest` proxy. | `https://eu.i.posthog.com` |
 
 ---
 

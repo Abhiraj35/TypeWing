@@ -3,6 +3,7 @@
 import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { accuracyFromCounts, countWpm, wpmNumeratorFromCounts } from "@shared/wpm-count"
+import { trackEvent } from "@/lib/analytics"
 
 /**
  * resumeIndex re-seats the cursor at the server synced word boundary after a
@@ -65,11 +66,28 @@ export function useMultiplayerTyping(words: string[], startedAt: number | null, 
   }, [words, wordInputs, typed, wordIndex, finished, elapsedSec])
 
   const finish = useCallback((nextInputs: string[], nextTyped: string, nextIndex: number) => {
+    // Computed from the final input rather than the render-time `stats`, which
+    // is still one keystroke behind, so the event carries the number the
+    // results screen and the server are both told.
+    const counts = countWpm({
+      targetWords: words,
+      wordInputs: nextInputs,
+      typed: nextTyped,
+      wordIndex: nextIndex,
+      mode: "words",
+      final: true,
+    })
+    const elapsedMinutes = Math.max((Date.now() - (startRef.current ?? Date.now())) / 60_000, 1 / 60)
+    trackEvent("multiplayer_race_completed", {
+      final_wpm: Math.round(wpmNumeratorFromCounts(counts) / 5 / elapsedMinutes),
+      accuracy: accuracyFromCounts(counts),
+      word_count: words.length,
+    })
     setWordInputs(nextInputs)
     setTyped(nextTyped)
     setWordIndex(nextIndex)
     setFinished(true)
-  }, [])
+  }, [words])
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.ctrlKey || event.metaKey || event.altKey || finished || !startedAt) return
