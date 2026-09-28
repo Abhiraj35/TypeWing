@@ -1,6 +1,7 @@
 {
   "name": "typewing-server",
   "private": true,
+  "packageManager": "pnpm@10.28.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch index.ts",
@@ -9,6 +10,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@opentelemetry/api-logs": "^0.222.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.222.0",
+    "@opentelemetry/resources": "^2.11.0",
+    "@opentelemetry/sdk-logs": "^0.222.0",
     "express": "^5.1.0",
     "nanoid": "^5.1.0",
     "socket.io": "^4.8.0",

@@ -7,6 +7,7 @@ import { getQuote, type QuoteLength } from "@/lib/quotes"
 import { generateWords } from "@shared/words"
 import { accuracyFromCounts, countWpm, wpmNumeratorFromCounts, type TestMode } from "@shared/wpm-count"
 import type { ResultStats, WpmSnapshot } from "@/lib/result-types"
+import { trackEvent } from "@/lib/analytics"
 export type TimeOption = 15 | 30 | 60
 export type WordOption = 10 | 25 | 50
 
@@ -128,7 +129,16 @@ export function useTypingTest({
         clearInterval(timerRef.current)
         timerRef.current = null
       }
-      setFrozenStats(finalStats ?? buildResultStats())
+      const result = finalStats ?? buildResultStats()
+      setFrozenStats(result)
+      trackEvent("typing_test_completed", {
+        mode: result.mode,
+        test_length: result.modeDetail,
+        wpm: result.wpm,
+        accuracy: result.accuracy,
+        duration_seconds: result.elapsedSeconds,
+        corrected_errors: result.correctedErrors,
+      })
       setFinished(true)
       onFinished?.(true)
       onTypingActiveChange?.(false)
@@ -281,6 +291,10 @@ export function useTypingTest({
   // ---- Keyboard handling ---------------------------------------------------------
 
   const startTest = useCallback(() => {
+    trackEvent("typing_test_started", {
+      mode,
+      test_length: mode === "time" ? timeOption : mode === "words" ? wordOption : quoteLength,
+    })
     setStarted(true)
     startTimeRef.current = Date.now()
     setStartTime(startTimeRef.current)
@@ -317,7 +331,7 @@ export function useTypingTest({
         }
       }
     }, 250)
-  }, [timeOption, mode, onTypingActiveChange])
+  }, [timeOption, wordOption, quoteLength, mode, onTypingActiveChange])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {

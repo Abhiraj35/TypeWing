@@ -25,6 +25,7 @@ import {
   type Room,
 } from "./room-manager"
 import { getRandomText, validateFinishWpm, validateProgress } from "./game-logic"
+import { logRaceFinished, logRaceStarted, logRoomCreated, shutdownPosthogLogs } from "./posthog-logs"
 
 const app = express()
 app.get("/health", (_request, response) => response.json({ ok: true }))
@@ -67,6 +68,10 @@ function endGame(room: Room): void {
   })
 
   const finalLeaderboard = buildLeaderboard(room)
+  logRaceFinished(
+    finalLeaderboard.length,
+    finalLeaderboard.filter((player) => player.finishTime !== null).length,
+  )
   io.to(room.id).emit("room:state", serializeRoom(room))
   io.to(room.id).emit("game:end", { finalLeaderboard })
   scheduleFinishedCleanup(room, () => undefined)
@@ -117,6 +122,11 @@ io.on("connection", (socket) => {
     await socket.join(created.room.id)
     socket.emit("room:created", { roomId: created.room.id })
     socket.emit("player:seat", { playerId: created.playerId, resumeToken: created.resumeToken })
+    logRoomCreated(
+      created.room.config.maxPlayers,
+      created.room.config.timeLimit,
+      created.room.config.wordCount,
+    )
     emitRoomState(created.room)
   })
 
@@ -203,6 +213,7 @@ io.on("connection", (socket) => {
     )
     if (activePlayers.length < 2) return emitError(socket.id, "At least two players are needed to start.")
 
+    logRaceStarted(activePlayers.length, room.config.timeLimit, room.config.wordCount)
     room.status = "countdown"
     room.text = getRandomText(room.config.wordCount)
     room.startTime = null
@@ -288,5 +299,33 @@ httpServer.listen(port, () => {
   const address = httpServer.address() as AddressInfo | null
   console.log(`Typewing multiplayer server listening on ${address?.port ?? port}`)
 })
+
+let shuttingDown = false
+
+/**
+ * Drains the server on SIGTERM / SIGINT.
+ *
+ * `process.on("exit")` handlers are not awaited, so without this the buffered
+ * PostHog export is lost on every deploy. The OTLP flush has to finish before
+ * the server closes, and a signal handler is the only place the container gives
+ * us a window to do it.
+ */
+async function shutdown(signal: NodeJS.Signals): Promise<void> {
+  if (shuttingDown) return
+  shuttingDown = true
+  console.log(`${signal} received, shutting down multiplayer server`)
+  clearInterval(cleanupInterval)
+  await shutdownPosthogLogs()
+  // io.close() also closes the http server and disconnects every socket, so
+  // clients get a transport error and reconnect on the next deploy instead of
+  // hanging on a half-closed connection.
+  await new Promise<void>((resolve) => io.close(() => resolve()))
+}
+
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    void shutdown(signal).then(() => process.exit(0))
+  })
+}
 
 export { app, httpServer, io, endGame }

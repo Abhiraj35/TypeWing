@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import type { ConnectionState, Player, RoomConfig, RoomState } from "@shared/types"
 import { clearSeat, getSeat, storeSeat } from "@/lib/resume-storage"
 import { useSocket } from "@/components/multiplayer/socket-provider"
+import { trackEvent } from "@/lib/analytics"
 
 interface MultiplayerContextValue {
   connected: boolean
@@ -233,17 +234,29 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   }, [isRacing, raceEndsAt])
 
   const createRoom = useCallback((username: string, config: RoomConfig) => {
+    trackEvent("multiplayer_room_create_requested", {
+      word_count: config.wordCount,
+      max_players: config.maxPlayers,
+      time_limit_seconds: config.timeLimit,
+    })
     socket.emit("room:create", { username, config })
   }, [socket])
   const joinRoom = useCallback((requestedRoomId: string, username: string) => {
     const normalizedRoomId = requestedRoomId.trim().toUpperCase()
+    trackEvent("multiplayer_room_join_requested")
     roomIdRef.current = normalizedRoomId
     setRoomId(normalizedRoomId)
     socket.emit("room:join", { roomId: normalizedRoomId, username })
   }, [socket])
   const startGame = useCallback(() => {
-    if (roomId) socket.emit("game:startRequest", { roomId })
-  }, [roomId, socket])
+    if (!roomId) return
+    trackEvent("multiplayer_race_start_requested", {
+      player_count: roomState?.players.filter((player) => !player.spectator).length ?? 0,
+      word_count: roomState?.config.wordCount,
+      time_limit_seconds: roomState?.config.timeLimit,
+    })
+    socket.emit("game:startRequest", { roomId })
+  }, [roomId, roomState, socket])
   const sendProgress = useCallback((wpm: number, progress: number) => {
     if (roomId) socket.emit("player:progress", { roomId, wpm, progress })
   }, [roomId, socket])
@@ -251,11 +264,16 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
     if (roomId) socket.emit("player:finished", { roomId, finalWpm })
   }, [roomId, socket])
   const requestRematch = useCallback(() => {
-    if (roomId) socket.emit("game:rematchRequest", { roomId })
+    if (!roomId) return
+    trackEvent("multiplayer_rematch_requested")
+    socket.emit("game:rematchRequest", { roomId })
   }, [roomId, socket])
   const leaveRoom = useCallback(() => {
     const code = roomIdRef.current
-    if (code) clearSeat(code)
+    if (code) {
+      trackEvent("multiplayer_room_left")
+      clearSeat(code)
+    }
     roomIdRef.current = null
     pendingResumeRef.current = null
     boundRoomRef.current = null
