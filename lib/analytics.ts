@@ -5,7 +5,7 @@ import posthog from "posthog-js"
  */
 const isPostHogConfigured = (): boolean =>
   typeof window !== "undefined" &&
-  Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST)
+  Boolean(process.env.POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST)
 
 /**
  * Tracks a custom event in PostHog safely.

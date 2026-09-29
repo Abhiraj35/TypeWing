@@ -13,7 +13,7 @@ Standalone Express 5 + Socket.IO authoritative game server for multiplayer typin
 | `game-logic.ts` | Word generation and anti-cheat progress / WPM validation |
 | `rate-limiter.ts` | Per socket, per event rate limits |
 | `constants.ts` | Tunables: limits, options, countdown, cleanup windows |
-| `posthog-logs.ts` | Buffered OTLP export of room and race events; needs an absolute `NEXT_PUBLIC_POSTHOG_HOST` |
+| `posthog-logs.ts` | Buffered OTLP export of room and race events; needs an absolute `POSTHOG_HOST` |
 
 ## Commands
 

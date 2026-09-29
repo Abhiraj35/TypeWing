@@ -3,8 +3,8 @@ import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http"
 import { resourceFromAttributes } from "@opentelemetry/resources"
 import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs"
 
-const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
-const host = process.env.NEXT_PUBLIC_POSTHOG_HOST
+const token = process.env.POSTHOG_PROJECT_TOKEN
+const host = process.env.POSTHOG_HOST
 
 // The client is often configured with a same-origin proxy path ("/ingest") for
 // ad blocking. That is correct for the browser but not for this process: the
@@ -17,8 +17,8 @@ function getLoggerProvider(): LoggerProvider | null {
   if (!isAbsoluteHttpUrl(host) || !token) {
     if (process.env.NODE_ENV === "development") {
       const missingVariable = !token
-        ? "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN"
-        : "NEXT_PUBLIC_POSTHOG_HOST"
+        ? "POSTHOG_PROJECT_TOKEN"
+        : "POSTHOG_HOST"
 
       console.warn(
         `[PostHog Server] ${missingVariable} variable required by PostHog is not configured, or is not an absolute http(s) URL. Server log export is disabled.`,

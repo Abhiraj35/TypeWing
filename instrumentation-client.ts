@@ -1,12 +1,12 @@
 import posthog from "posthog-js"
 
-const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
+const token = process.env.POSTHOG_PROJECT_TOKEN
 const host = process.env.NEXT_PUBLIC_POSTHOG_HOST
 
 if (!token || !host) {
   if (process.env.NODE_ENV === "development") {
     const missingVariable = !token
-      ? "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN"
+      ? "POSTHOG_PROJECT_TOKEN"
       : "NEXT_PUBLIC_POSTHOG_HOST"
 
     console.warn(
